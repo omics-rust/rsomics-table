@@ -36,6 +36,8 @@ go=$root/toolchain/go/bin/go
 export GOCACHE=$root/cache/go-build
 export GOMODCACHE=$root/cache/go-mod
 export GOPATH=$root/cache/gopath
+export GOPROXY=https://goproxy.cn,direct
+export GOSUMDB=sum.golang.google.cn
 
 csvtk_archive=$root/downloads/csvtk-$csvtk_tag.tar.gz
 curl -fsSLo "$csvtk_archive" "https://codeload.github.com/shenwei356/csvtk/tar.gz/refs/tags/$csvtk_tag"
@@ -73,6 +75,8 @@ install -m 0755 "$bedtools_source/bin/bedtools" "$root/bin/bedtools"
 {
   date -u '+built_utc=%Y-%m-%dT%H:%M:%SZ'
   "$go" version
+  echo "GOPROXY=$GOPROXY"
+  echo "GOSUMDB=$GOSUMDB"
   "$root/bin/csvtk" version
   "$root/bin/datamash" --version | head -n 1
   "$root/bin/bedtools" --version
