@@ -61,6 +61,12 @@ jobs:
         if: matrix.target == 'linux-x86_64'
         run: cargo fmt --all -- --check
 
+      - name: Benchmark comparator tests
+        if: matrix.target == 'linux-x86_64'
+        run: |
+          rustc --edition 2024 --test benchmarks/compare-groupby.rs -o "$RUNNER_TEMP/compare-groupby-tests"
+          "$RUNNER_TEMP/compare-groupby-tests"
+
       - name: Strict Clippy
         if: matrix.target == 'linux-x86_64'
         run: cargo clippy --locked --all-targets --all-features -- -D warnings
@@ -82,6 +88,23 @@ jobs:
       - name: Verify package
         if: matrix.target == 'linux-x86_64'
         run: cargo package --locked
+
+      - name: Build benchmark artifacts
+        if: matrix.target == 'linux-x86_64' && github.event_name == 'push'
+        run: |
+          cargo build --release --locked
+          rustc --edition 2024 -O benchmarks/compare-groupby.rs -o target/release/compare-groupby
+
+      - name: Upload benchmark artifacts
+        if: matrix.target == 'linux-x86_64' && github.event_name == 'push'
+        uses: actions/upload-artifact@v7
+        with:
+          name: rsomics-table-linux-x86_64-${{ github.sha }}
+          path: |
+            target/release/rsomics-table
+            target/release/compare-groupby
+          if-no-files-found: error
+          retention-days: 7
 
   oracle:
     name: linux-x86_64-oracles

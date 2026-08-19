@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -ne 6 ]]; then
-  echo "usage: $0 FIXTURES RESULTS RSOMICS_TABLE CSVTK DATAMASH BEDTOOLS" >&2
+if [[ $# -ne 7 ]]; then
+  echo "usage: $0 FIXTURES RESULTS RSOMICS_TABLE CSVTK DATAMASH BEDTOOLS GROUPBY_COMPARATOR" >&2
   exit 2
 fi
 
@@ -12,6 +12,7 @@ rsomics=$3
 csvtk=$4
 datamash=$5
 bedtools=$6
+groupby_comparator=$7
 cpuset=${CPUSET:-0-3}
 warmup=${WARMUP:-3}
 runs=${RUNS:-10}
@@ -23,7 +24,7 @@ repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 for command in hyperfine taskset sha256sum lscpu free jq shuf mpstat; do
   command -v "$command" >/dev/null
 done
-for executable in "$rsomics" "$csvtk" "$datamash" "$bedtools" /usr/bin/time; do
+for executable in "$rsomics" "$csvtk" "$datamash" "$bedtools" "$groupby_comparator" /usr/bin/time; do
   [[ -x $executable ]]
 done
 
@@ -42,6 +43,7 @@ done
 "$bedtools" --version | grep -F 'v2.31.1' >/dev/null
 
 mkdir -p "$results/outputs" "$results/timings"
+printf 'benchmark\tcomparison\n' > "$results/comparisons.tsv"
 export LC_ALL=C
 export GOMAXPROCS=4
 
@@ -64,7 +66,8 @@ export GOMAXPROCS=4
   "$bedtools" --version
   hyperfine --version
   /usr/bin/time --version | head -n 1
-  sha256sum "$rsomics" "$csvtk" "$datamash" "$bedtools"
+  sha256sum "$rsomics" "$csvtk" "$datamash" "$bedtools" "$groupby_comparator"
+  sha256sum "$repo/benchmarks/compare-groupby.rs"
   find "$fixtures" -maxdepth 1 -type f -printf '%s %p\n' | sort
   sha256sum "$stream" "$stream_gzip" "$sort_input" "$group_global" "$group_consecutive" "$join_right"
 } > "$results/manifest.txt"
@@ -86,11 +89,17 @@ record_single() {
 
 record_pair() {
   local name=$1
+  local comparison=${2:-bytes}
   local ours_output=$results/outputs/$name.rsomics
   local upstream_output=$results/outputs/$name.upstream
   "${OURS_CMD[@]}" > "$ours_output"
   "${UPSTREAM_CMD[@]}" > "$upstream_output"
-  cmp "$ours_output" "$upstream_output"
+  case $comparison in
+    bytes) cmp "$ours_output" "$upstream_output" ;;
+    bedtools-numeric) "$groupby_comparator" "$ours_output" "$upstream_output" ;;
+    *) echo "unknown comparison mode: $comparison" >&2; return 2 ;;
+  esac
+  printf '%s\t%s\n' "$name" "$comparison" >> "$results/comparisons.tsv"
   sha256sum "$ours_output" "$upstream_output" >> "$results/output-sha256.txt"
   shell_command "${OURS_CMD[@]}"
   local ours_text=$command_text
@@ -191,6 +200,6 @@ record_pair groupby_global_high
 OURS_CMD=("${prefix[@]}" "$rsomics" groupby --tsv --no-header --no-output-header --consecutive \
   --group 2 --aggregate 4:sum --aggregate 4:mean --aggregate 4:count "$group_consecutive")
 UPSTREAM_CMD=("${prefix[@]}" "$bedtools" groupby -g 2 -c 4,4,4 -o sum,mean,count -i "$group_consecutive")
-record_pair groupby_consecutive
+record_pair groupby_consecutive bedtools-numeric
 
 date -u '+finished_utc=%Y-%m-%dT%H:%M:%SZ' >> "$results/manifest.txt"

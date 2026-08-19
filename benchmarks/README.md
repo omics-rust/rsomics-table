@@ -10,6 +10,8 @@ benchmarks/build-oracles-linux-x86_64.sh \
   /external/rsomics-table-bench/oracles
 
 rustc -O benchmarks/generate.rs -o /external/rsomics-table-bench/generate
+rustc -O benchmarks/compare-groupby.rs \
+  -o /external/rsomics-table-bench/bin/compare-groupby
 /external/rsomics-table-bench/generate \
   /external/rsomics-table-bench/fixtures 5000000 60000000
 gzip -n -k /external/rsomics-table-bench/fixtures/stream.csv
@@ -20,19 +22,23 @@ benchmarks/run-linux-x86_64.sh \
   /external/rsomics-table-bench/bin/rsomics-table \
   /external/rsomics-table-bench/oracles/bin/csvtk \
   /external/rsomics-table-bench/oracles/bin/datamash \
-  /external/rsomics-table-bench/oracles/bin/bedtools
+  /external/rsomics-table-bench/oracles/bin/bedtools \
+  /external/rsomics-table-bench/bin/compare-groupby
 ```
 
 The oracle binaries must be csvtk 0.37.0, GNU datamash 1.9, and BEDTools
 2.31.1. The runner rejects other versions. Each comparable operation first
-produces and byte-compares complete outputs. It then uses Hyperfine with three
-paired warmups and ten runs. The paired runner randomizes which implementation
-runs first while balancing first position across the complete sample, pins four
-CPUs, and directs output to `/dev/null`. Raw Hyperfine JSON and the paired timing
-table retain the execution order. GNU time records CPU and peak RSS separately.
-The manifest captures revisions, binary and fixture hashes, commands, host
-details, load, per-CPU utilization before the run, memory, and filesystem
-provenance.
+produces and compares complete outputs. Comparisons are byte-exact except for
+consecutive groupby, where BEDTools renders floating-point values with ten
+significant digits. That comparison requires exact groups, counts, row counts,
+and field counts while checking sums and means at `1e-9` relative tolerance.
+The runner then uses Hyperfine with three paired warmups and ten runs. It
+randomizes which implementation runs first while balancing first position
+across the complete sample, pins four CPUs, and directs output to `/dev/null`.
+Raw Hyperfine JSON and the paired timing table retain the execution order. GNU
+time records CPU and peak RSS separately. The manifest captures revisions,
+binary and fixture hashes, commands, host details, load, per-CPU utilization
+before the run, memory, and filesystem provenance.
 
 The result directory must not already exist. Complete comparison outputs stay
 under its `outputs` directory so the runner never deletes or overwrites an
