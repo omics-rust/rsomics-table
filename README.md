@@ -10,6 +10,7 @@ rsomics-table select [OPTIONS] --fields <FIELDS> [TABLE]
 rsomics-table filter [OPTIONS] --where <EXPRESSION> [TABLE]
 rsomics-table sort [OPTIONS] [TABLE]
 rsomics-table join [OPTIONS] <LEFT> <RIGHT>
+rsomics-table groupby [OPTIONS] --aggregate <SPEC> [TABLE]
 ```
 
 `validate` checks CSV/TSV quoting, row width, headers, optional UTF-8, and
@@ -81,3 +82,17 @@ Composite keys use collision-free byte framing. Full joins append unmatched
 right rows in their original order, and colliding right-side headers receive a
 checked `_right` suffix. `--null-never-matches` prevents any key containing an
 empty field from matching.
+
+`groupby` combines equal composite keys globally and writes keys in byte-sorted
+order. Aggregates use `FIELD:OPERATION[=ALIAS]`; repeat `--aggregate` to produce
+multiple values. Without `--group`, the complete input is one group.
+
+```bash
+rsomics-table groupby --group condition --aggregate count:sum=total counts.csv
+rsomics-table groupby --tsv --group sample,feature --aggregate value:mean matrix.tsv
+```
+
+`--consecutive` keeps one active run for already grouped input and fails if a
+key reappears later. Numeric cells fail loudly by default;
+`--ignore-non-numeric` skips them and reports the number skipped. Numeric,
+order-statistic, and text operations are listed in `groupby --help`.

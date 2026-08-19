@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+mod aggregate;
 mod cli;
 mod dialect;
 mod expression;
@@ -47,6 +48,10 @@ fn main() -> std::process::ExitCode {
         cli::Command::Join(arguments) => {
             let json = output.json;
             run(&output, META, || operations::join::run(&arguments, json))
+        }
+        cli::Command::Groupby(arguments) => {
+            let json = output.json;
+            run(&output, META, || operations::groupby::run(&arguments, json))
         }
     }
 }

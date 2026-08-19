@@ -35,6 +35,9 @@ pub(crate) enum Command {
 
     /// Join two tables by checked keys.
     Join(JoinArgs),
+
+    /// Aggregate records by checked table keys.
+    Groupby(GroupbyArgs),
 }
 
 #[derive(Debug, Args)]
@@ -271,6 +274,56 @@ impl JoinArgs {
 }
 
 #[derive(Debug, Args)]
+pub(crate) struct GroupbyArgs {
+    #[command(flatten)]
+    pub(crate) input: InputArgs,
+
+    /// Fields that identify each group.
+    #[arg(short = 'g', long, allow_hyphen_values = true, value_name = "FIELDS")]
+    pub(crate) group: Option<String>,
+
+    /// Aggregate as FIELD:OPERATION[=ALIAS]; repeatable. Operations: sum, min,
+    /// max, absmin, absmax, range, mean, geomean, harmmean, pvar, svar,
+    /// pstdev, sstdev, pskew, sskew, pkurt, skurt, median, q1, q3, iqr,
+    /// perc:N, mad, madraw, count, first, last, unique, collapse, countunique,
+    /// mode, antimode.
+    #[arg(
+        short = 'a',
+        long = "aggregate",
+        required = true,
+        allow_hyphen_values = true,
+        value_name = "SPEC"
+    )]
+    pub(crate) aggregates: Vec<String>,
+
+    /// Aggregate adjacent runs and reject keys that reappear.
+    #[arg(long)]
+    pub(crate) consecutive: bool,
+
+    /// Skip non-numeric cells in numeric aggregates.
+    #[arg(long)]
+    pub(crate) ignore_non_numeric: bool,
+
+    /// Separator used by collapse and unique aggregates.
+    #[arg(long, default_value = ",", value_name = "TEXT")]
+    pub(crate) collapse_delimiter: String,
+
+    #[command(flatten)]
+    pub(crate) output: TableOutputArgs,
+
+    /// Omit the aggregate header from output.
+    #[arg(long)]
+    pub(crate) no_output_header: bool,
+}
+
+impl GroupbyArgs {
+    pub(crate) fn resolved_output_delimiter(&self) -> u8 {
+        self.output
+            .resolved_delimiter(self.input.resolved_delimiter())
+    }
+}
+
+#[derive(Debug, Args)]
 pub(crate) struct TableOutputArgs {
     /// Output table, or - for standard output.
     #[arg(short = 'o', long, value_name = "TABLE", default_value = "-")]
@@ -336,7 +389,7 @@ mod tests {
         assert!(help.contains("filter"), "{help}");
         assert!(help.contains("sort"), "{help}");
         assert!(help.contains("join"), "{help}");
-        assert!(!help.contains("  groupby"), "{help}");
+        assert!(help.contains("groupby"), "{help}");
     }
 
     #[test]
