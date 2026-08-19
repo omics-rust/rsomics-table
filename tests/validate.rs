@@ -147,6 +147,7 @@ fn malformed_quote_fails_with_position() {
 #[cfg(unix)]
 #[test]
 fn broken_stdout_fails_nonzero() {
+    use std::net::Shutdown;
     use std::os::fd::OwnedFd;
     use std::os::unix::net::UnixStream;
     use std::process::Stdio;
@@ -154,8 +155,8 @@ fn broken_stdout_fails_nonzero() {
     let directory = tempfile::tempdir().unwrap();
     let input_path = directory.path().join("input.csv");
     std::fs::write(&input_path, b"name,value\nA,1\n").unwrap();
-    let (reader, writer) = UnixStream::pair().unwrap();
-    drop(reader);
+    let (_reader, writer) = UnixStream::pair().unwrap();
+    writer.shutdown(Shutdown::Write).unwrap();
     let writer: OwnedFd = writer.into();
     let output = Command::new(env!("CARGO_BIN_EXE_rsomics-table"))
         .arg("validate")
