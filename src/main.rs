@@ -1,0 +1,50 @@
+#![forbid(unsafe_code)]
+
+mod cli;
+mod dialect;
+mod io;
+mod operations;
+
+use std::io::Write;
+
+use rsomics_common::{Result, RsomicsError, ToolMeta, Validation, run_validation};
+
+const META: ToolMeta = ToolMeta {
+    name: "rsomics-table",
+    version: env!("CARGO_PKG_VERSION"),
+};
+
+fn main() -> std::process::ExitCode {
+    let cli = rsomics_help::parse::<cli::Cli>();
+    match cli.command {
+        cli::Command::Validate(arguments) => {
+            let json = cli.output.json;
+            run_validation(&cli.output, META, || {
+                let result = operations::validate::run(&arguments)?;
+                if !json && let Validation::Valid(report) = &result {
+                    emit_valid_summary(report.records, report.fields)?;
+                }
+                Ok(result)
+            })
+        }
+    }
+}
+
+fn emit_valid_summary(records: u64, fields: u64) -> Result<()> {
+    let stdout = std::io::stdout();
+    let mut stdout = stdout.lock();
+    writeln!(
+        stdout,
+        "valid: {} {}, {} {}",
+        records,
+        plural(records, "record", "records"),
+        fields,
+        plural(fields, "field", "fields")
+    )
+    .map_err(RsomicsError::Io)?;
+    stdout.flush().map_err(RsomicsError::Io)
+}
+
+fn plural(value: u64, singular: &'static str, plural: &'static str) -> &'static str {
+    if value == 1 { singular } else { plural }
+}

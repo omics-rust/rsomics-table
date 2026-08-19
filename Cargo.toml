@@ -1,0 +1,23 @@
+[package]
+name = "rsomics-table"
+version = "0.1.0"
+description = "High-performance CSV and TSV workflows for bioinformatics"
+edition = "2024"
+rust-version = "1.91"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/omics-rust/rsomics-table"
+authors = ["Zane Leong <efd@live.com>"]
+categories = ["science", "command-line-utilities"]
+keywords = ["csv", "tsv", "bioinformatics", "table", "data"]
+readme = "README.md"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+flate2 = "1"
+rsomics-common = "0.12"
+rsomics-help = "0.4"
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+serde_json = "1"
+tempfile = "3"
