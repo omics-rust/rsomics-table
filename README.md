@@ -2,6 +2,10 @@
 
 Strict, high-performance CSV and TSV workflows for bioinformatics.
 
+```bash
+cargo install rsomics-table
+```
+
 Only completed operations appear in the command help:
 
 ```text
