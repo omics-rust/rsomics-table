@@ -32,8 +32,8 @@ pub(crate) struct ValidationIssue {
 pub(crate) fn run(arguments: &ValidateArgs) -> Result<Validation<ValidationReport>> {
     let dialect = Dialect::new(
         arguments.input.resolved_delimiter(),
-        arguments.input.comment,
-        !arguments.input.no_header,
+        arguments.input.format.comment,
+        !arguments.input.format.no_header,
     )?;
     let input = open(&arguments.input.input)?;
     let compression = input.compression;

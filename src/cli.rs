@@ -1,7 +1,7 @@
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use rsomics_common::OutputArgs;
 
 #[derive(Debug, Parser)]
@@ -32,6 +32,9 @@ pub(crate) enum Command {
 
     /// Sort records by checked table keys.
     Sort(SortArgs),
+
+    /// Join two tables by checked keys.
+    Join(JoinArgs),
 }
 
 #[derive(Debug, Args)]
@@ -40,6 +43,18 @@ pub(crate) struct InputArgs {
     #[arg(value_name = "TABLE", default_value = "-")]
     pub(crate) input: PathBuf,
 
+    #[command(flatten)]
+    pub(crate) format: InputFormatArgs,
+}
+
+impl InputArgs {
+    pub(crate) fn resolved_delimiter(&self) -> u8 {
+        self.format.resolved_delimiter()
+    }
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct InputFormatArgs {
     /// Read tab-delimited input.
     #[arg(long, conflicts_with = "delimiter")]
     pub(crate) tsv: bool,
@@ -57,7 +72,7 @@ pub(crate) struct InputArgs {
     pub(crate) comment: Option<u8>,
 }
 
-impl InputArgs {
+impl InputFormatArgs {
     pub(crate) fn resolved_delimiter(&self) -> u8 {
         if self.tsv { b'\t' } else { self.delimiter }
     }
@@ -172,6 +187,89 @@ impl SortArgs {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+pub(crate) enum JoinKind {
+    Inner,
+    Left,
+    Full,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct JoinArgs {
+    /// Left input table.
+    #[arg(value_name = "LEFT")]
+    pub(crate) left: PathBuf,
+
+    /// Right input table.
+    #[arg(value_name = "RIGHT")]
+    pub(crate) right: PathBuf,
+
+    /// Key fields shared by both tables.
+    #[arg(
+        long,
+        value_name = "FIELDS",
+        conflicts_with_all = ["left_on", "right_on"],
+        required_unless_present = "left_on",
+        allow_hyphen_values = true
+    )]
+    pub(crate) on: Option<String>,
+
+    /// Key fields in the left table.
+    #[arg(
+        long,
+        value_name = "FIELDS",
+        requires = "right_on",
+        allow_hyphen_values = true
+    )]
+    pub(crate) left_on: Option<String>,
+
+    /// Key fields in the right table.
+    #[arg(
+        long,
+        value_name = "FIELDS",
+        requires = "left_on",
+        allow_hyphen_values = true
+    )]
+    pub(crate) right_on: Option<String>,
+
+    /// Join type.
+    #[arg(long, value_enum, default_value = "inner")]
+    pub(crate) kind: JoinKind,
+
+    /// Fold Unicode case in key fields.
+    #[arg(short = 'i', long)]
+    pub(crate) ignore_case: bool,
+
+    /// Prevent empty key fields from matching.
+    #[arg(long)]
+    pub(crate) null_never_matches: bool,
+
+    /// Value written for unmatched non-key fields.
+    #[arg(long, default_value = "")]
+    pub(crate) fill: String,
+
+    /// Suffix for colliding right-side column names.
+    #[arg(long, default_value = "_right")]
+    pub(crate) right_suffix: String,
+
+    #[command(flatten)]
+    pub(crate) input: InputFormatArgs,
+
+    #[command(flatten)]
+    pub(crate) output: TableOutputArgs,
+
+    /// Omit the joined header from output.
+    #[arg(long)]
+    pub(crate) no_output_header: bool,
+}
+
+impl JoinArgs {
+    pub(crate) fn resolved_output_delimiter(&self) -> u8 {
+        self.output
+            .resolved_delimiter(self.input.resolved_delimiter())
+    }
+}
+
 #[derive(Debug, Args)]
 pub(crate) struct TableOutputArgs {
     /// Output table, or - for standard output.
@@ -237,9 +335,8 @@ mod tests {
         assert!(help.contains("select"), "{help}");
         assert!(help.contains("filter"), "{help}");
         assert!(help.contains("sort"), "{help}");
-        for absent in ["join", "groupby"] {
-            assert!(!help.contains(&format!("  {absent}")), "{help}");
-        }
+        assert!(help.contains("join"), "{help}");
+        assert!(!help.contains("  groupby"), "{help}");
     }
 
     #[test]

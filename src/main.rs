@@ -5,6 +5,7 @@ mod dialect;
 mod expression;
 mod fields;
 mod io;
+mod join;
 mod operations;
 mod ordering;
 
@@ -42,6 +43,10 @@ fn main() -> std::process::ExitCode {
         cli::Command::Sort(arguments) => {
             let json = output.json;
             run(&output, META, || operations::sort::run(&arguments, json))
+        }
+        cli::Command::Join(arguments) => {
+            let json = output.json;
+            run(&output, META, || operations::join::run(&arguments, json))
         }
     }
 }

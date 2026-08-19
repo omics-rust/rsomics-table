@@ -9,6 +9,7 @@ rsomics-table validate [OPTIONS] [TABLE]
 rsomics-table select [OPTIONS] --fields <FIELDS> [TABLE]
 rsomics-table filter [OPTIONS] --where <EXPRESSION> [TABLE]
 rsomics-table sort [OPTIONS] [TABLE]
+rsomics-table join [OPTIONS] <LEFT> <RIGHT>
 ```
 
 `validate` checks CSV/TSV quoting, row width, headers, optional UTF-8, and
@@ -66,3 +67,17 @@ Numeric spellings with commas and non-numeric values follow csvtk 0.37.0 sort
 semantics. Equal-key output uses its deterministic permutation at every thread
 count. Date and custom-level keys are rejected rather than silently treated as
 text.
+
+`join` supports inner, left, and full joins over one or more keys. Use `--on`
+when both tables share key names, or pair `--left-on` with `--right-on`.
+Duplicate keys produce the complete Cartesian product in input order.
+
+```bash
+rsomics-table join --on sample metadata.csv counts.csv
+rsomics-table join --left-on id --right-on sample_id --kind full --fill NA left.csv right.csv
+```
+
+Composite keys use collision-free byte framing. Full joins append unmatched
+right rows in their original order, and colliding right-side headers receive a
+checked `_right` suffix. `--null-never-matches` prevents any key containing an
+empty field from matching.
