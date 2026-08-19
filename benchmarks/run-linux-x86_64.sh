@@ -20,7 +20,7 @@ repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 [[ $(uname -s) == Linux && $(uname -m) == x86_64 ]]
 [[ ! -e $results ]]
 [[ $warmup =~ ^[0-9]+$ && $runs =~ ^[1-9][0-9]*$ ]]
-for command in hyperfine taskset sha256sum lscpu free jq shuf; do
+for command in hyperfine taskset sha256sum lscpu free jq shuf mpstat; do
   command -v "$command" >/dev/null
 done
 for executable in "$rsomics" "$csvtk" "$datamash" "$bedtools" /usr/bin/time; do
@@ -56,6 +56,7 @@ export GOMAXPROCS=4
   lscpu
   free -b
   uptime
+  mpstat -P "$cpuset" 1 3
   df -hT "$fixtures" "$results"
   "$rsomics" --version
   "$csvtk" version

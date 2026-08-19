@@ -31,7 +31,8 @@ runs first while balancing first position across the complete sample, pins four
 CPUs, and directs output to `/dev/null`. Raw Hyperfine JSON and the paired timing
 table retain the execution order. GNU time records CPU and peak RSS separately.
 The manifest captures revisions, binary and fixture hashes, commands, host
-details, load, memory, and filesystem provenance.
+details, load, per-CPU utilization before the run, memory, and filesystem
+provenance.
 
 The result directory must not already exist. Complete comparison outputs stay
 under its `outputs` directory so the runner never deletes or overwrites an
