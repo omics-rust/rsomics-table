@@ -129,6 +129,11 @@ jobs:
           make install
           "$RUNNER_TEMP/oracles/datamash/bin/datamash" --version | grep -F 'datamash (GNU datamash) 1.9'
 
+      - name: Install BEDTools build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libbz2-dev liblzma-dev zlib1g-dev
+
       - name: Build BEDTools 2.31.1
         run: |
           git init -q "$RUNNER_TEMP/bedtools2"
