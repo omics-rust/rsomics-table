@@ -139,8 +139,8 @@ jobs:
         run: |
           git init -q "$RUNNER_TEMP/bedtools2"
           git -C "$RUNNER_TEMP/bedtools2" remote add origin https://github.com/arq5x/bedtools2.git
-          git -C "$RUNNER_TEMP/bedtools2" fetch -q --depth=1 origin "refs/tags/$BEDTOOLS_TAG"
-          git -C "$RUNNER_TEMP/bedtools2" checkout -q --detach FETCH_HEAD
+          git -C "$RUNNER_TEMP/bedtools2" fetch -q --depth=1 origin "refs/tags/$BEDTOOLS_TAG:refs/tags/$BEDTOOLS_TAG"
+          git -C "$RUNNER_TEMP/bedtools2" checkout -q --detach "$BEDTOOLS_TAG"
           test "$(git -C "$RUNNER_TEMP/bedtools2" rev-parse HEAD)" = "$BEDTOOLS_REVISION"
           make -C "$RUNNER_TEMP/bedtools2" -j2
           "$RUNNER_TEMP/bedtools2/bin/bedtools" --version | grep -F 'v2.31.1'
