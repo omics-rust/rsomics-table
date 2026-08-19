@@ -6,6 +6,7 @@ mod expression;
 mod fields;
 mod io;
 mod operations;
+mod ordering;
 
 use std::io::Write;
 
@@ -37,6 +38,10 @@ fn main() -> std::process::ExitCode {
         cli::Command::Filter(arguments) => {
             let json = output.json;
             run(&output, META, || operations::filter::run(&arguments, json))
+        }
+        cli::Command::Sort(arguments) => {
+            let json = output.json;
+            run(&output, META, || operations::sort::run(&arguments, json))
         }
     }
 }

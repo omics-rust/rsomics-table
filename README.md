@@ -8,6 +8,7 @@ Only completed operations appear in the command help:
 rsomics-table validate [OPTIONS] [TABLE]
 rsomics-table select [OPTIONS] --fields <FIELDS> [TABLE]
 rsomics-table filter [OPTIONS] --where <EXPRESSION> [TABLE]
+rsomics-table sort [OPTIONS] [TABLE]
 ```
 
 `validate` checks CSV/TSV quoting, row width, headers, optional UTF-8, and
@@ -51,3 +52,17 @@ Fields that parse as finite numbers are numeric by default. Use
 `--numeric-as-string` when exact numeric spelling is text. Unsupported
 operators, type errors, invalid UTF-8 consumed by the expression, invalid
 regexes, division by zero, and non-finite results fail nonzero.
+
+`sort` accepts repeated `--key FIELD[:TYPE]` values. The default type is byte
+lexical order; `n` selects numeric order, `N` natural order, and `r` reverses
+one key. Field ranges and comma lists use the same grammar as `select`.
+
+```bash
+rsomics-table sort --key score:nr --key sample results.csv
+rsomics-table sort --tsv --key chrom:N --threads 4 variants.tsv
+```
+
+Numeric spellings with commas and non-numeric values follow csvtk 0.37.0 sort
+semantics. Equal-key output uses its deterministic permutation at every thread
+count. Date and custom-level keys are rejected rather than silently treated as
+text.

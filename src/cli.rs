@@ -29,6 +29,9 @@ pub(crate) enum Command {
 
     /// Filter records with a typed expression.
     Filter(FilterArgs),
+
+    /// Sort records by checked table keys.
+    Sort(SortArgs),
 }
 
 #[derive(Debug, Args)]
@@ -131,6 +134,45 @@ impl FilterArgs {
 }
 
 #[derive(Debug, Args)]
+pub(crate) struct SortArgs {
+    #[command(flatten)]
+    pub(crate) input: InputArgs,
+
+    /// Sort key as FIELD[:n|N][r]; repeatable.
+    #[arg(
+        short = 'k',
+        long = "key",
+        alias = "keys",
+        allow_hyphen_values = true,
+        value_name = "KEY",
+        default_value = "1-"
+    )]
+    pub(crate) keys: Vec<String>,
+
+    /// Fold Unicode case for text and natural keys.
+    #[arg(short = 'i', long)]
+    pub(crate) ignore_case: bool,
+
+    /// Worker threads used by the sort.
+    #[arg(short = 't', long, default_value_t = default_threads())]
+    pub(crate) threads: NonZeroUsize,
+
+    #[command(flatten)]
+    pub(crate) output: TableOutputArgs,
+
+    /// Omit the input header from output.
+    #[arg(long)]
+    pub(crate) no_output_header: bool,
+}
+
+impl SortArgs {
+    pub(crate) fn resolved_output_delimiter(&self) -> u8 {
+        self.output
+            .resolved_delimiter(self.input.resolved_delimiter())
+    }
+}
+
+#[derive(Debug, Args)]
 pub(crate) struct TableOutputArgs {
     /// Output table, or - for standard output.
     #[arg(short = 'o', long, value_name = "TABLE", default_value = "-")]
@@ -170,6 +212,10 @@ fn parse_byte(value: &str) -> Result<u8, String> {
     Ok(bytes[0])
 }
 
+fn default_threads() -> NonZeroUsize {
+    std::thread::available_parallelism().unwrap_or(NonZeroUsize::MIN)
+}
+
 #[cfg(test)]
 mod tests {
     use clap::error::ErrorKind;
@@ -190,7 +236,8 @@ mod tests {
         assert!(help.contains("validate"), "{help}");
         assert!(help.contains("select"), "{help}");
         assert!(help.contains("filter"), "{help}");
-        for absent in ["sort", "join", "groupby"] {
+        assert!(help.contains("sort"), "{help}");
+        for absent in ["join", "groupby"] {
             assert!(!help.contains(&format!("  {absent}")), "{help}");
         }
     }

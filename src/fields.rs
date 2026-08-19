@@ -117,7 +117,7 @@ pub(crate) fn header_issues(header: &[Vec<u8>], utf8: bool, limit: usize) -> Vec
     issues
 }
 
-fn split(input: &str) -> Result<Vec<&str>> {
+pub(crate) fn split(input: &str) -> Result<Vec<&str>> {
     if input.is_empty() {
         return Err(invalid("field selection is empty"));
     }
