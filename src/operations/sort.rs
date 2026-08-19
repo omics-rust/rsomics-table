@@ -47,7 +47,7 @@ pub(crate) fn run(arguments: &SortArgs, json: bool) -> Result<SortSummary> {
             keys: &arguments.keys,
             ignore_case: arguments.ignore_case,
             threads: arguments.threads.get(),
-            no_output_header: arguments.no_output_header,
+            no_output_header: arguments.output.no_output_header,
             output_delimiter: arguments.resolved_output_delimiter(),
             input_compression,
             output_compression,

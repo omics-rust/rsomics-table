@@ -45,7 +45,7 @@ pub(crate) fn run(arguments: &FilterArgs, json: bool) -> Result<FilterSummary> {
             dialect,
             expression: &arguments.expression,
             numeric_as_string: arguments.numeric_as_string,
-            no_output_header: arguments.no_output_header,
+            no_output_header: arguments.output.no_output_header,
             output_delimiter: arguments.resolved_output_delimiter(),
             input_compression,
             output_compression,

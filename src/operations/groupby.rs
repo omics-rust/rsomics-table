@@ -52,7 +52,7 @@ pub(crate) fn run(arguments: &GroupbyArgs, json: bool) -> Result<GroupbySummary>
             consecutive: arguments.consecutive,
             ignore_non_numeric: arguments.ignore_non_numeric,
             collapse_delimiter: &arguments.collapse_delimiter,
-            no_output_header: arguments.no_output_header,
+            no_output_header: arguments.output.no_output_header,
             output_delimiter: arguments.resolved_output_delimiter(),
             input_compression,
             output_compression,

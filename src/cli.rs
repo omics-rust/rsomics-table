@@ -110,10 +110,6 @@ pub(crate) struct SelectArgs {
 
     #[command(flatten)]
     pub(crate) output: TableOutputArgs,
-
-    /// Omit the projected header from output.
-    #[arg(long)]
-    pub(crate) no_output_header: bool,
 }
 
 impl SelectArgs {
@@ -138,10 +134,6 @@ pub(crate) struct FilterArgs {
 
     #[command(flatten)]
     pub(crate) output: TableOutputArgs,
-
-    /// Omit the input header from output.
-    #[arg(long)]
-    pub(crate) no_output_header: bool,
 }
 
 impl FilterArgs {
@@ -177,10 +169,6 @@ pub(crate) struct SortArgs {
 
     #[command(flatten)]
     pub(crate) output: TableOutputArgs,
-
-    /// Omit the input header from output.
-    #[arg(long)]
-    pub(crate) no_output_header: bool,
 }
 
 impl SortArgs {
@@ -260,10 +248,6 @@ pub(crate) struct JoinArgs {
 
     #[command(flatten)]
     pub(crate) output: TableOutputArgs,
-
-    /// Omit the joined header from output.
-    #[arg(long)]
-    pub(crate) no_output_header: bool,
 }
 
 impl JoinArgs {
@@ -310,10 +294,6 @@ pub(crate) struct GroupbyArgs {
 
     #[command(flatten)]
     pub(crate) output: TableOutputArgs,
-
-    /// Omit the aggregate header from output.
-    #[arg(long)]
-    pub(crate) no_output_header: bool,
 }
 
 impl GroupbyArgs {
@@ -340,6 +320,10 @@ pub(crate) struct TableOutputArgs {
     /// Write gzip-compressed output.
     #[arg(long)]
     pub(crate) gzip: bool,
+
+    /// Omit the output header.
+    #[arg(long)]
+    pub(crate) no_output_header: bool,
 }
 
 impl TableOutputArgs {

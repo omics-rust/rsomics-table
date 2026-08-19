@@ -123,7 +123,7 @@ fn process(
     let arguments = options.arguments;
     let mut writer = RecordWriter::new(sink, arguments.resolved_output_delimiter());
     if let Some(header) = plan.output_header()
-        && !arguments.no_output_header
+        && !arguments.output.no_output_header
     {
         writer
             .write(header.iter().map(Vec::as_slice))

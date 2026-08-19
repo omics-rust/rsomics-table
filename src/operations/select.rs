@@ -46,7 +46,7 @@ pub(crate) fn run(arguments: &SelectArgs, json: bool) -> Result<SelectSummary> {
             dialect,
             spec: &spec,
             fuzzy: arguments.fuzzy_fields,
-            no_output_header: arguments.no_output_header,
+            no_output_header: arguments.output.no_output_header,
             output_delimiter: arguments.resolved_output_delimiter(),
             input_compression,
             output_compression,
