@@ -2,12 +2,13 @@
 
 mod cli;
 mod dialect;
+mod fields;
 mod io;
 mod operations;
 
 use std::io::Write;
 
-use rsomics_common::{Result, RsomicsError, ToolMeta, Validation, run_validation};
+use rsomics_common::{Result, RsomicsError, ToolMeta, Validation, run, run_validation};
 
 const META: ToolMeta = ToolMeta {
     name: "rsomics-table",
@@ -16,16 +17,21 @@ const META: ToolMeta = ToolMeta {
 
 fn main() -> std::process::ExitCode {
     let cli = rsomics_help::parse::<cli::Cli>();
+    let output = cli.output;
     match cli.command {
         cli::Command::Validate(arguments) => {
-            let json = cli.output.json;
-            run_validation(&cli.output, META, || {
+            let json = output.json;
+            run_validation(&output, META, || {
                 let result = operations::validate::run(&arguments)?;
                 if !json && let Validation::Valid(report) = &result {
                     emit_valid_summary(report.records, report.fields)?;
                 }
                 Ok(result)
             })
+        }
+        cli::Command::Select(arguments) => {
+            let json = output.json;
+            run(&output, META, || operations::select::run(&arguments, json))
         }
     }
 }

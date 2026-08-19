@@ -1,6 +1,8 @@
 use std::io::Write;
+use std::path::Path;
 
 use flate2::{Compression, write::GzEncoder};
+use rsomics_common::{Result, RsomicsError, write_output};
 
 pub(crate) enum EncodedWriter<W: Write> {
     Plain(W),
@@ -41,6 +43,28 @@ impl<W: Write> Write for EncodedWriter<W> {
             Self::Gzip(sink) => sink.flush(),
         }
     }
+}
+
+pub(crate) fn write<T>(
+    path: &Path,
+    gzip: bool,
+    operation: impl FnOnce(&mut dyn Write) -> Result<T>,
+) -> Result<T> {
+    write_output(Some(path), |sink| {
+        let mut encoded = if gzip_enabled(path, gzip) {
+            EncodedWriter::gzip(sink)
+        } else {
+            EncodedWriter::plain(sink)
+        };
+        let result = operation(&mut encoded)?;
+        encoded.finish().map_err(RsomicsError::Io)?;
+        Ok(result)
+    })
+}
+
+pub(crate) fn gzip_enabled(path: &Path, requested: bool) -> bool {
+    requested
+        || (path != Path::new("-") && path.extension().is_some_and(|extension| extension == "gz"))
 }
 
 #[cfg(test)]

@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::io;
 
 use rsomics_common::{Result, RsomicsError, Validation};
@@ -6,6 +5,7 @@ use serde::Serialize;
 
 use crate::cli::ValidateArgs;
 use crate::dialect::Dialect;
+use crate::fields::header_issues;
 use crate::io::input::{Compression, open};
 use crate::io::reader::{Record, RecordError, RecordReader};
 
@@ -30,13 +30,12 @@ pub(crate) struct ValidationIssue {
 }
 
 pub(crate) fn run(arguments: &ValidateArgs) -> Result<Validation<ValidationReport>> {
-    let delimiter = if arguments.tsv {
-        b'\t'
-    } else {
-        arguments.delimiter
-    };
-    let dialect = Dialect::new(delimiter, arguments.comment, !arguments.no_header)?;
-    let input = open(&arguments.input)?;
+    let dialect = Dialect::new(
+        arguments.input.resolved_delimiter(),
+        arguments.input.comment,
+        !arguments.input.no_header,
+    )?;
+    let input = open(&arguments.input.input)?;
     let compression = input.compression;
     let mut reader = RecordReader::new(input.reader, dialect.delimiter, dialect.comment);
     let mut expected_width = None;
@@ -59,7 +58,11 @@ pub(crate) fn run(arguments: &ValidateArgs) -> Result<Validation<ValidationRepor
             first = false;
             expected_width = Some(record.fields.len());
             if dialect.header {
-                validate_header(&record, arguments.utf8, limit, &mut errors);
+                errors.extend(
+                    header_issues(&record.fields, arguments.utf8, limit)
+                        .into_iter()
+                        .map(|message| issue(&record, message)),
+                );
                 if errors.len() >= limit {
                     break;
                 }
@@ -120,35 +123,6 @@ pub(crate) fn run(arguments: &ValidateArgs) -> Result<Validation<ValidationRepor
     } else {
         let message = report.errors[0].message.clone();
         Ok(Validation::Invalid { report, message })
-    }
-}
-
-fn validate_header(record: &Record, utf8: bool, limit: usize, errors: &mut Vec<ValidationIssue>) {
-    let mut names = HashSet::new();
-    for (index, field) in record.fields.iter().enumerate() {
-        if field.is_empty() {
-            errors.push(issue(
-                record,
-                format!("header field {} is empty", index + 1),
-            ));
-        } else if !names.insert(field.as_slice()) {
-            errors.push(issue(
-                record,
-                format!("header field {} is duplicated", index + 1),
-            ));
-        }
-        if errors.len() >= limit {
-            break;
-        }
-        if utf8 && std::str::from_utf8(field).is_err() {
-            errors.push(issue(
-                record,
-                format!("header field {} is not valid UTF-8", index + 1),
-            ));
-        }
-        if errors.len() >= limit {
-            break;
-        }
     }
 }
 

@@ -23,10 +23,13 @@ pub(crate) struct Cli {
 pub(crate) enum Command {
     /// Validate table framing and structure.
     Validate(ValidateArgs),
+
+    /// Select and reorder fields.
+    Select(SelectArgs),
 }
 
 #[derive(Debug, Args)]
-pub(crate) struct ValidateArgs {
+pub(crate) struct InputArgs {
     /// Input table, or - for standard input.
     #[arg(value_name = "TABLE", default_value = "-")]
     pub(crate) input: PathBuf,
@@ -46,6 +49,18 @@ pub(crate) struct ValidateArgs {
     /// Ignore lines beginning with this ASCII byte.
     #[arg(long, value_parser = parse_byte)]
     pub(crate) comment: Option<u8>,
+}
+
+impl InputArgs {
+    pub(crate) fn resolved_delimiter(&self) -> u8 {
+        if self.tsv { b'\t' } else { self.delimiter }
+    }
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct ValidateArgs {
+    #[command(flatten)]
+    pub(crate) input: InputArgs,
 
     /// Require every field to be valid UTF-8.
     #[arg(long)]
@@ -54,6 +69,51 @@ pub(crate) struct ValidateArgs {
     /// Maximum number of recoverable structural errors to report.
     #[arg(long, default_value = "1")]
     pub(crate) max_errors: NonZeroUsize,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct SelectArgs {
+    #[command(flatten)]
+    pub(crate) input: InputArgs,
+
+    /// Fields to select, reorder, or exclude.
+    #[arg(short = 'f', long, allow_hyphen_values = true)]
+    pub(crate) fields: String,
+
+    /// Match field names with csvtk-compatible fuzzy patterns.
+    #[arg(short = 'F', long)]
+    pub(crate) fuzzy_fields: bool,
+
+    /// Output table, or - for standard output.
+    #[arg(short = 'o', long, value_name = "TABLE", default_value = "-")]
+    pub(crate) output: PathBuf,
+
+    /// Output delimiter as one ASCII byte or \\t.
+    #[arg(short = 'D', long, value_parser = parse_byte, conflicts_with = "output_tsv")]
+    pub(crate) output_delimiter: Option<u8>,
+
+    /// Write tab-delimited output.
+    #[arg(long)]
+    pub(crate) output_tsv: bool,
+
+    /// Omit the projected header from output.
+    #[arg(long)]
+    pub(crate) no_output_header: bool,
+
+    /// Write gzip-compressed output.
+    #[arg(long)]
+    pub(crate) gzip: bool,
+}
+
+impl SelectArgs {
+    pub(crate) fn resolved_output_delimiter(&self) -> u8 {
+        if self.output_tsv {
+            b'\t'
+        } else {
+            self.output_delimiter
+                .unwrap_or_else(|| self.input.resolved_delimiter())
+        }
+    }
 }
 
 fn parse_byte(value: &str) -> Result<u8, String> {
@@ -79,13 +139,14 @@ mod tests {
     }
 
     #[test]
-    fn help_exposes_only_validate() {
+    fn help_exposes_only_completed_commands() {
         let error =
             rsomics_help::try_parse_from::<Cli, _, _>(["rsomics-table", "--help"]).unwrap_err();
         assert_eq!(error.kind(), ErrorKind::DisplayHelp);
         let help = error.to_string();
         assert!(help.contains("validate"), "{help}");
-        for absent in ["select", "filter", "sort", "join", "groupby"] {
+        assert!(help.contains("select"), "{help}");
+        for absent in ["filter", "sort", "join", "groupby"] {
             assert!(!help.contains(&format!("  {absent}")), "{help}");
         }
     }

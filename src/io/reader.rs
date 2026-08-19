@@ -1,6 +1,8 @@
 use std::fmt;
 use std::io::{self, BufRead};
 
+use rsomics_common::RsomicsError;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct Record {
     pub(crate) fields: Vec<Vec<u8>>,
@@ -40,6 +42,15 @@ impl fmt::Display for RecordError {
 impl From<io::Error> for RecordError {
     fn from(error: io::Error) -> Self {
         Self::Io(error)
+    }
+}
+
+impl From<RecordError> for RsomicsError {
+    fn from(error: RecordError) -> Self {
+        match error {
+            RecordError::Io(error) => Self::Io(error),
+            error @ RecordError::Syntax { .. } => Self::InvalidInput(error.to_string()),
+        }
     }
 }
 
