@@ -19,7 +19,8 @@ repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 [[ $(uname -s) == Linux && $(uname -m) == x86_64 ]]
 [[ ! -e $results ]]
-for command in hyperfine taskset sha256sum lscpu free; do
+[[ $warmup =~ ^[0-9]+$ && $runs =~ ^[1-9][0-9]*$ ]]
+for command in hyperfine taskset sha256sum lscpu free jq shuf; do
   command -v "$command" >/dev/null
 done
 for executable in "$rsomics" "$csvtk" "$datamash" "$bedtools" /usr/bin/time; do
@@ -40,7 +41,7 @@ done
 "$datamash" --version | head -n 1 | grep -F 'datamash (GNU datamash) 1.9' >/dev/null
 "$bedtools" --version | grep -F 'v2.31.1' >/dev/null
 
-mkdir -p "$results/outputs"
+mkdir -p "$results/outputs" "$results/timings"
 export LC_ALL=C
 export GOMAXPROCS=4
 
@@ -96,10 +97,50 @@ record_pair() {
   local upstream_text=$command_text
   printf '%s\trsomics\t%s\n%s\tupstream\t%s\n' \
     "$name" "$ours_text" "$name" "$upstream_text" >> "$results/commands.tsv"
-  hyperfine --style basic --warmup "$warmup" --runs "$runs" --randomize-order \
-    --export-json "$results/$name.json" \
-    --command-name rsomics "$ours_text > /dev/null 2>&1" \
-    --command-name upstream "$upstream_text > /dev/null 2>&1"
+  local schedule=$results/timings/$name.order
+  local pair
+  {
+    for ((pair = 0; pair < runs / 2; pair++)); do
+      printf '%s\n' rsomics upstream
+    done
+    if ((runs % 2)); then
+      printf '%s\n' rsomics upstream | shuf -n 1
+    fi
+  } | shuf > "$schedule"
+  local -a run_order
+  mapfile -t run_order < "$schedule"
+  for ((pair = 0; pair < warmup; pair++)); do
+    if [[ ${run_order[pair % runs]} == rsomics ]]; then
+      "${OURS_CMD[@]}" > /dev/null 2>&1
+      "${UPSTREAM_CMD[@]}" > /dev/null 2>&1
+    else
+      "${UPSTREAM_CMD[@]}" > /dev/null 2>&1
+      "${OURS_CMD[@]}" > /dev/null 2>&1
+    fi
+  done
+  printf 'pair\tfirst\trsomics_seconds\tupstream_seconds\n' > "$results/$name.tsv"
+  for ((pair = 0; pair < runs; pair++)); do
+    local number=$((pair + 1))
+    local ours_json=$results/timings/$name.$number.rsomics.json
+    local upstream_json=$results/timings/$name.$number.upstream.json
+    if [[ ${run_order[pair]} == rsomics ]]; then
+      hyperfine --style none --runs 1 --export-json "$ours_json" \
+        --command-name rsomics "$ours_text > /dev/null 2>&1"
+      hyperfine --style none --runs 1 --export-json "$upstream_json" \
+        --command-name upstream "$upstream_text > /dev/null 2>&1"
+    else
+      hyperfine --style none --runs 1 --export-json "$upstream_json" \
+        --command-name upstream "$upstream_text > /dev/null 2>&1"
+      hyperfine --style none --runs 1 --export-json "$ours_json" \
+        --command-name rsomics "$ours_text > /dev/null 2>&1"
+    fi
+    local ours_seconds
+    local upstream_seconds
+    ours_seconds=$(jq -r '.results[0].times[0]' "$ours_json")
+    upstream_seconds=$(jq -r '.results[0].times[0]' "$upstream_json")
+    printf '%s\t%s\t%s\t%s\n' "$number" "${run_order[pair]}" \
+      "$ours_seconds" "$upstream_seconds" >> "$results/$name.tsv"
+  done
   /usr/bin/time -v -o "$results/$name.rsomics.time" \
     "${OURS_CMD[@]}" > /dev/null 2> "$results/$name.rsomics.stderr"
   /usr/bin/time -v -o "$results/$name.upstream.time" \

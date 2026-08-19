@@ -26,10 +26,12 @@ benchmarks/run-linux-x86_64.sh \
 The oracle binaries must be csvtk 0.37.0, GNU datamash 1.9, and BEDTools
 2.31.1. The runner rejects other versions. Each comparable operation first
 produces and byte-compares complete outputs. It then uses Hyperfine with three
-warmups, ten randomized alternating runs, four pinned CPUs, and output directed
-to `/dev/null`. GNU time records CPU and peak RSS separately. The manifest
-captures revisions, binary and fixture hashes, commands, host details, load,
-memory, and filesystem provenance.
+paired warmups and ten runs. The paired runner randomizes which implementation
+runs first while balancing first position across the complete sample, pins four
+CPUs, and directs output to `/dev/null`. Raw Hyperfine JSON and the paired timing
+table retain the execution order. GNU time records CPU and peak RSS separately.
+The manifest captures revisions, binary and fixture hashes, commands, host
+details, load, memory, and filesystem provenance.
 
 The result directory must not already exist. Complete comparison outputs stay
 under its `outputs` directory so the runner never deletes or overwrites an
