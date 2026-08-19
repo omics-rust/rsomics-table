@@ -43,13 +43,24 @@ impl<R: BufRead> TableReader<R> {
     }
 
     pub(crate) fn next_record(&mut self) -> Result<Option<Record>> {
-        let record = match self.pending.take() {
-            Some(record) => Some(record),
-            None => self.records.next_record()?,
+        let mut record = Record::default();
+        if self.next_record_into(&mut record)? {
+            Ok(Some(record))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub(crate) fn next_record_into(&mut self, record: &mut Record) -> Result<bool> {
+        let present = if let Some(pending) = self.pending.take() {
+            *record = pending;
+            true
+        } else {
+            self.records.next_record_into(record)?
         };
-        let Some(record) = record else {
-            return Ok(None);
-        };
+        if !present {
+            return Ok(false);
+        }
         if record.fields.len() != self.width {
             return Err(RsomicsError::InvalidInput(format!(
                 "record {} has {} fields; expected {}",
@@ -58,6 +69,6 @@ impl<R: BufRead> TableReader<R> {
                 self.width
             )));
         }
-        Ok(Some(record))
+        Ok(true)
     }
 }

@@ -3,7 +3,9 @@ use std::io::{self, BufRead};
 
 use rsomics_common::RsomicsError;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+const READ_BUFFER_SIZE: usize = 64 * 1024;
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) struct Record {
     pub(crate) fields: Vec<Vec<u8>>,
     pub(crate) number: u64,
@@ -70,6 +72,9 @@ pub(crate) struct RecordReader<R: BufRead> {
     newlines: u64,
     last_was_newline: bool,
     records: u64,
+    buffer: Box<[u8]>,
+    cursor: usize,
+    filled: usize,
 }
 
 impl<R: BufRead> RecordReader<R> {
@@ -82,21 +87,34 @@ impl<R: BufRead> RecordReader<R> {
             newlines: 0,
             last_was_newline: false,
             records: 0,
+            buffer: vec![0; READ_BUFFER_SIZE].into_boxed_slice(),
+            cursor: 0,
+            filled: 0,
         }
     }
 
     pub(crate) fn next_record(&mut self) -> Result<Option<Record>, RecordError> {
+        let mut record = Record::default();
+        if self.next_record_into(&mut record)? {
+            Ok(Some(record))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub(crate) fn next_record_into(&mut self, record: &mut Record) -> Result<bool, RecordError> {
         loop {
             let start_line = self.current_line();
             let start_offset = self.bytes;
             let Some(first) = self.next_byte()? else {
-                return Ok(None);
+                return Ok(false);
             };
             if self.comment == Some(first) {
                 self.skip_comment()?;
                 continue;
             }
-            return self.read_record(first, start_line, start_offset).map(Some);
+            self.read_record_into(first, start_line, start_offset, record)?;
+            return Ok(true);
         }
     }
 
@@ -108,14 +126,20 @@ impl<R: BufRead> RecordReader<R> {
         self.newlines + u64::from(self.bytes > 0 && !self.last_was_newline)
     }
 
-    fn read_record(
+    fn read_record_into(
         &mut self,
         first: u8,
         start_line: u64,
         start_offset: u64,
-    ) -> Result<Record, RecordError> {
-        let mut fields = Vec::new();
-        let mut field = Vec::new();
+        record: &mut Record,
+    ) -> Result<(), RecordError> {
+        for field in &mut record.fields {
+            field.clear();
+        }
+        if record.fields.is_empty() {
+            record.fields.push(Vec::new());
+        }
+        let mut field = 0usize;
         let mut state = State::FieldStart;
         let mut current = Some(first);
 
@@ -128,11 +152,11 @@ impl<R: BufRead> RecordReader<R> {
                 return match state {
                     State::Quoted => Err(self.syntax("unterminated quoted field")),
                     _ => {
-                        if field.last() == Some(&b'\r') {
-                            field.pop();
+                        if record.fields[field].last() == Some(&b'\r') {
+                            record.fields[field].pop();
                         }
-                        fields.push(field);
-                        Ok(self.finish(fields, start_line, start_offset))
+                        self.finish(record, field + 1, start_line, start_offset);
+                        Ok(())
                     }
                 };
             };
@@ -141,60 +165,65 @@ impl<R: BufRead> RecordReader<R> {
                 State::FieldStart => match byte {
                     b'"' => state = State::Quoted,
                     b'\n' => {
-                        fields.push(field);
-                        return Ok(self.finish(fields, start_line, start_offset));
+                        self.finish(record, field + 1, start_line, start_offset);
+                        return Ok(());
                     }
-                    byte if byte == self.delimiter => fields.push(Vec::new()),
+                    byte if byte == self.delimiter => {
+                        field += 1;
+                        ensure_field(&mut record.fields, field);
+                    }
                     byte => {
-                        field.push(byte);
+                        record.fields[field].push(byte);
                         state = State::Unquoted;
                     }
                 },
                 State::Unquoted => match byte {
                     b'"' => return Err(self.syntax("bare quote in unquoted field")),
                     b'\n' => {
-                        if field.last() == Some(&b'\r') {
-                            field.pop();
+                        if record.fields[field].last() == Some(&b'\r') {
+                            record.fields[field].pop();
                         }
-                        fields.push(field);
-                        return Ok(self.finish(fields, start_line, start_offset));
+                        self.finish(record, field + 1, start_line, start_offset);
+                        return Ok(());
                     }
                     byte if byte == self.delimiter => {
-                        fields.push(std::mem::take(&mut field));
+                        field += 1;
+                        ensure_field(&mut record.fields, field);
                         state = State::FieldStart;
                     }
-                    byte => field.push(byte),
+                    byte => record.fields[field].push(byte),
                 },
                 State::Quoted => match byte {
                     b'"' => state = State::AfterQuote,
                     b'\n' => {
-                        if field.last() == Some(&b'\r') {
-                            field.pop();
+                        if record.fields[field].last() == Some(&b'\r') {
+                            record.fields[field].pop();
                         }
-                        field.push(b'\n');
+                        record.fields[field].push(b'\n');
                     }
-                    byte => field.push(byte),
+                    byte => record.fields[field].push(byte),
                 },
                 State::AfterQuote => match byte {
                     b'"' => {
-                        field.push(b'"');
+                        record.fields[field].push(b'"');
                         state = State::Quoted;
                     }
                     b'\r' => match self.next_byte()? {
                         Some(b'\n') | None => {
-                            fields.push(field);
-                            return Ok(self.finish(fields, start_line, start_offset));
+                            self.finish(record, field + 1, start_line, start_offset);
+                            return Ok(());
                         }
                         Some(_) => {
                             return Err(self.syntax("unexpected byte after closing quote"));
                         }
                     },
                     b'\n' => {
-                        fields.push(field);
-                        return Ok(self.finish(fields, start_line, start_offset));
+                        self.finish(record, field + 1, start_line, start_offset);
+                        return Ok(());
                     }
                     byte if byte == self.delimiter => {
-                        fields.push(std::mem::take(&mut field));
+                        field += 1;
+                        ensure_field(&mut record.fields, field);
                         state = State::FieldStart;
                     }
                     _ => return Err(self.syntax("unexpected byte after closing quote")),
@@ -203,14 +232,12 @@ impl<R: BufRead> RecordReader<R> {
         }
     }
 
-    fn finish(&mut self, fields: Vec<Vec<u8>>, line: u64, offset: u64) -> Record {
+    fn finish(&mut self, record: &mut Record, fields: usize, line: u64, offset: u64) {
         self.records += 1;
-        Record {
-            fields,
-            number: self.records,
-            line,
-            offset,
-        }
+        record.fields.truncate(fields);
+        record.number = self.records;
+        record.line = line;
+        record.offset = offset;
     }
 
     fn skip_comment(&mut self) -> Result<(), RecordError> {
@@ -223,11 +250,15 @@ impl<R: BufRead> RecordReader<R> {
     }
 
     fn next_byte(&mut self) -> Result<Option<u8>, RecordError> {
-        let buffer = self.source.fill_buf()?;
-        let Some(&byte) = buffer.first() else {
-            return Ok(None);
-        };
-        self.source.consume(1);
+        if self.cursor == self.filled {
+            self.filled = self.source.read(&mut self.buffer)?;
+            self.cursor = 0;
+            if self.filled == 0 {
+                return Ok(None);
+            }
+        }
+        let byte = self.buffer[self.cursor];
+        self.cursor += 1;
         self.bytes += 1;
         self.last_was_newline = byte == b'\n';
         if self.last_was_newline {
@@ -247,6 +278,12 @@ impl<R: BufRead> RecordReader<R> {
             offset: self.bytes.saturating_sub(1),
             message,
         }
+    }
+}
+
+fn ensure_field(fields: &mut Vec<Vec<u8>>, index: usize) {
+    if index == fields.len() {
+        fields.push(Vec::new());
     }
 }
 
@@ -304,5 +341,17 @@ mod tests {
         let rows = records(b"a\n\n").unwrap();
         assert_eq!(rows.len(), 2);
         assert_eq!(rows[1].fields, vec![Vec::<u8>::new()]);
+    }
+
+    #[test]
+    fn framing_crosses_internal_read_boundaries() {
+        let mut input = b"id,value\n1,\"".to_vec();
+        input.extend(std::iter::repeat_n(b'x', READ_BUFFER_SIZE));
+        input.extend_from_slice(b"\nend\"\n2,done\n");
+        let rows = records(&input).unwrap();
+        assert_eq!(rows.len(), 3);
+        assert_eq!(rows[1].fields[1].len(), READ_BUFFER_SIZE + 4);
+        assert_eq!(&rows[1].fields[1][READ_BUFFER_SIZE..], b"\nend");
+        assert_eq!(rows[2].fields[1], b"done");
     }
 }
