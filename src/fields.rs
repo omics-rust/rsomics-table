@@ -325,23 +325,23 @@ fn resolve_names(
     header: &[Vec<u8>],
     fuzzy: bool,
 ) -> Result<Vec<usize>> {
-    let names = header
-        .iter()
-        .enumerate()
-        .map(|(index, name)| {
-            std::str::from_utf8(name)
-                .map_err(|_| invalid(format!("header field {} is not valid UTF-8", index + 1)))
-        })
-        .collect::<Result<Vec<_>>>()?;
     if fuzzy {
+        let names = header
+            .iter()
+            .enumerate()
+            .map(|(index, name)| {
+                std::str::from_utf8(name)
+                    .map_err(|_| invalid(format!("header field {} is not valid UTF-8", index + 1)))
+            })
+            .collect::<Result<Vec<_>>>()?;
         return resolve_fuzzy(selectors, exclusion, &names);
     }
     let selected = selectors
         .iter()
         .map(|selector| {
-            names
+            header
                 .iter()
-                .position(|name| *name == selector)
+                .position(|name| name.as_slice() == selector.as_bytes())
                 .ok_or_else(|| invalid(format!("field {selector:?} is not present")))
         })
         .collect::<Result<Vec<_>>>()?;

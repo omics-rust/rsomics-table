@@ -26,6 +26,9 @@ pub(crate) enum Command {
 
     /// Select and reorder fields.
     Select(SelectArgs),
+
+    /// Filter records with a typed expression.
+    Filter(FilterArgs),
 }
 
 #[derive(Debug, Args)]
@@ -84,6 +87,51 @@ pub(crate) struct SelectArgs {
     #[arg(short = 'F', long)]
     pub(crate) fuzzy_fields: bool,
 
+    #[command(flatten)]
+    pub(crate) output: TableOutputArgs,
+
+    /// Omit the projected header from output.
+    #[arg(long)]
+    pub(crate) no_output_header: bool,
+}
+
+impl SelectArgs {
+    pub(crate) fn resolved_output_delimiter(&self) -> u8 {
+        self.output
+            .resolved_delimiter(self.input.resolved_delimiter())
+    }
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct FilterArgs {
+    #[command(flatten)]
+    pub(crate) input: InputArgs,
+
+    /// Boolean expression used to keep records.
+    #[arg(short = 'w', long = "where")]
+    pub(crate) expression: String,
+
+    /// Treat numeric field spellings as text.
+    #[arg(long)]
+    pub(crate) numeric_as_string: bool,
+
+    #[command(flatten)]
+    pub(crate) output: TableOutputArgs,
+
+    /// Omit the input header from output.
+    #[arg(long)]
+    pub(crate) no_output_header: bool,
+}
+
+impl FilterArgs {
+    pub(crate) fn resolved_output_delimiter(&self) -> u8 {
+        self.output
+            .resolved_delimiter(self.input.resolved_delimiter())
+    }
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct TableOutputArgs {
     /// Output table, or - for standard output.
     #[arg(short = 'o', long, value_name = "TABLE", default_value = "-")]
     pub(crate) output: PathBuf,
@@ -96,22 +144,17 @@ pub(crate) struct SelectArgs {
     #[arg(long)]
     pub(crate) output_tsv: bool,
 
-    /// Omit the projected header from output.
-    #[arg(long)]
-    pub(crate) no_output_header: bool,
-
     /// Write gzip-compressed output.
     #[arg(long)]
     pub(crate) gzip: bool,
 }
 
-impl SelectArgs {
-    pub(crate) fn resolved_output_delimiter(&self) -> u8 {
+impl TableOutputArgs {
+    fn resolved_delimiter(&self, input_delimiter: u8) -> u8 {
         if self.output_tsv {
             b'\t'
         } else {
-            self.output_delimiter
-                .unwrap_or_else(|| self.input.resolved_delimiter())
+            self.output_delimiter.unwrap_or(input_delimiter)
         }
     }
 }
@@ -146,7 +189,8 @@ mod tests {
         let help = error.to_string();
         assert!(help.contains("validate"), "{help}");
         assert!(help.contains("select"), "{help}");
-        for absent in ["filter", "sort", "join", "groupby"] {
+        assert!(help.contains("filter"), "{help}");
+        for absent in ["sort", "join", "groupby"] {
             assert!(!help.contains(&format!("  {absent}")), "{help}");
         }
     }

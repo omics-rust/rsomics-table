@@ -2,6 +2,7 @@
 
 mod cli;
 mod dialect;
+mod expression;
 mod fields;
 mod io;
 mod operations;
@@ -32,6 +33,10 @@ fn main() -> std::process::ExitCode {
         cli::Command::Select(arguments) => {
             let json = output.json;
             run(&output, META, || operations::select::run(&arguments, json))
+        }
+        cli::Command::Filter(arguments) => {
+            let json = output.json;
+            run(&output, META, || operations::filter::run(&arguments, json))
         }
     }
 }

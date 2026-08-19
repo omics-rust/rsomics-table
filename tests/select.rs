@@ -95,6 +95,14 @@ fn projected_records_keep_csv_quoting_and_bytes() {
     let bytes = run(b"a,b\n1,\xff\n", &["--fields", "2"]);
     assert!(bytes.status.success());
     assert_eq!(bytes.stdout, b"b\n\xff\n");
+
+    let invalid_unselected_header = run(b"name,\xff\nA,x\n", &["--fields", "name"]);
+    assert!(
+        invalid_unselected_header.status.success(),
+        "{}",
+        String::from_utf8_lossy(&invalid_unselected_header.stderr)
+    );
+    assert_eq!(invalid_unselected_header.stdout, b"name\nA\n");
 }
 
 #[test]

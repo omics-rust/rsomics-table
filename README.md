@@ -7,6 +7,7 @@ Only completed operations appear in the command help:
 ```text
 rsomics-table validate [OPTIONS] [TABLE]
 rsomics-table select [OPTIONS] --fields <FIELDS> [TABLE]
+rsomics-table filter [OPTIONS] --where <EXPRESSION> [TABLE]
 ```
 
 `validate` checks CSV/TSV quoting, row width, headers, optional UTF-8, and
@@ -35,3 +36,18 @@ rsomics-table --json select --fields name --output names.csv results.csv.gz
 
 Named output is transactional and `.gz` selects gzip compression. Use
 `--gzip` when compressed output is written to standard output.
+
+`filter` parses one closed typed expression before streaming records. Field
+references use `$1`, `$name`, or `${name with spaces}`. It supports finite
+numbers, quoted UTF-8 strings, Booleans, `null`, arithmetic, comparisons,
+`=~`, `!~`, literal-list `in`, `&&`, `||`, `!`, `len`, and `ulen`.
+
+```bash
+rsomics-table filter --where '$score >= 20 && $status == "case"' results.csv
+rsomics-table filter --where '${sample name} =~ "^S[0-9]+$"' samples.csv
+```
+
+Fields that parse as finite numbers are numeric by default. Use
+`--numeric-as-string` when exact numeric spelling is text. Unsupported
+operators, type errors, invalid UTF-8 consumed by the expression, invalid
+regexes, division by zero, and non-finite results fail nonzero.
