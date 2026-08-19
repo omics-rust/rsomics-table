@@ -84,8 +84,9 @@ fn process(
         write_projected(&mut writer, header, &plan)?;
     }
     let mut records = 0u64;
+    let mut record = Record::default();
 
-    while let Some(record) = reader.next_record()? {
+    while reader.next_record_into(&mut record)? {
         write_projected(&mut writer, &record, &plan)?;
         records += 1;
     }

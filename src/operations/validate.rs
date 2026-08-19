@@ -43,16 +43,17 @@ pub(crate) fn run(arguments: &ValidateArgs) -> Result<Validation<ValidationRepor
     let mut errors = Vec::new();
     let limit = arguments.max_errors.get();
     let mut first = true;
+    let mut record = Record::default();
 
     loop {
-        let record = match reader.next_record() {
-            Ok(Some(record)) => record,
-            Ok(None) => break,
+        match reader.next_record_into(&mut record) {
+            Ok(true) => {}
+            Ok(false) => break,
             Err(error) => {
                 errors.push(issue_from_reader(error, compression)?);
                 break;
             }
-        };
+        }
 
         if first {
             first = false;

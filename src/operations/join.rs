@@ -134,7 +134,8 @@ fn process(
     let mut left_records = 0u64;
     let mut output_records = 0u64;
     let mut matched_pairs = 0u64;
-    while let Some(left_record) = left.next_record()? {
+    let mut left_record = Record::default();
+    while left.next_record_into(&mut left_record)? {
         left_records += 1;
         let key = plan.left_key(&left_record)?;
         let matches = key.as_ref().and_then(|key| options.groups.get(key));

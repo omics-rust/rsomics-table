@@ -8,6 +8,7 @@ use crate::dialect::Dialect;
 use crate::expression::Program;
 use crate::io::input::{Compression, open};
 use crate::io::output;
+use crate::io::reader::Record;
 use crate::io::table::TableReader;
 use crate::io::writer::RecordWriter;
 
@@ -87,7 +88,8 @@ fn process(
 
     let mut records = 0u64;
     let mut kept = 0u64;
-    while let Some(record) = reader.next_record()? {
+    let mut record = Record::default();
+    while reader.next_record_into(&mut record)? {
         records += 1;
         if program.evaluate(&record.fields, record.number)? {
             writer
