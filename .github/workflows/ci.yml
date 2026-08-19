@@ -9,10 +9,15 @@ on:
 permissions:
   contents: read
 
+env:
+  CSVTK_REVISION: cc94b40d35cef9188d19f961718d9630479827c0
+  CSVTK_TAG: v0.37.0
+
 jobs:
   native:
     name: ${{ matrix.target }}
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -34,6 +39,24 @@ jobs:
         with:
           components: clippy,rustfmt
 
+      - name: Install Go 1.25.5
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.25.5
+          cache: false
+
+      - name: Build csvtk 0.37.0
+        run: |
+          git init -q "$RUNNER_TEMP/csvtk"
+          git -C "$RUNNER_TEMP/csvtk" remote add origin https://github.com/shenwei356/csvtk.git
+          git -C "$RUNNER_TEMP/csvtk" fetch -q --depth=1 origin "refs/tags/$CSVTK_TAG"
+          git -C "$RUNNER_TEMP/csvtk" checkout -q --detach FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/csvtk" rev-parse HEAD)" = "$CSVTK_REVISION"
+          mkdir -p "$RUNNER_TEMP/oracles"
+          cd "$RUNNER_TEMP/csvtk"
+          go build -trimpath -o "$RUNNER_TEMP/oracles/csvtk" ./csvtk
+          "$RUNNER_TEMP/oracles/csvtk" version | grep -F 'csvtk v0.37.0'
+
       - name: Format
         if: matrix.target == 'linux-x86_64'
         run: cargo fmt --all -- --check
@@ -48,6 +71,77 @@ jobs:
       - name: Test release
         run: cargo test --release --locked --all-targets --all-features
 
+      - name: Pinned csvtk differential
+        env:
+          RSOMICS_CSVTK: ${{ runner.temp }}/oracles/csvtk
+        run: >-
+          cargo test --locked --all-features
+          --test select_compat --test filter_compat --test sort_compat --test join_compat
+          -- --ignored
+
       - name: Verify package
         if: matrix.target == 'linux-x86_64'
         run: cargo package --locked
+
+  oracle:
+    name: linux-x86_64-oracles
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      BEDTOOLS_REVISION: 705ccfdf2c9a77d71560c8adcece0663c2f5e18e
+      BEDTOOLS_TAG: v2.31.1
+      DATAMASH_SHA256: f382ebda03650dd679161f758f9c0a6cc9293213438d4a77a8eda325aacb87d2
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust 1.91
+        uses: dtolnay/rust-toolchain@1.91.0
+        with:
+          components: clippy,rustfmt
+
+      - name: Install Go 1.25.5
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.25.5
+          cache: false
+
+      - name: Build csvtk 0.37.0
+        run: |
+          git init -q "$RUNNER_TEMP/csvtk"
+          git -C "$RUNNER_TEMP/csvtk" remote add origin https://github.com/shenwei356/csvtk.git
+          git -C "$RUNNER_TEMP/csvtk" fetch -q --depth=1 origin "refs/tags/$CSVTK_TAG"
+          git -C "$RUNNER_TEMP/csvtk" checkout -q --detach FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/csvtk" rev-parse HEAD)" = "$CSVTK_REVISION"
+          mkdir -p "$RUNNER_TEMP/oracles"
+          cd "$RUNNER_TEMP/csvtk"
+          go build -trimpath -o "$RUNNER_TEMP/oracles/csvtk" ./csvtk
+          "$RUNNER_TEMP/oracles/csvtk" version | grep -F 'csvtk v0.37.0'
+
+      - name: Build GNU datamash 1.9
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/datamash-1.9.tar.gz" https://ftp.gnu.org/gnu/datamash/datamash-1.9.tar.gz
+          echo "$DATAMASH_SHA256  $RUNNER_TEMP/datamash-1.9.tar.gz" | sha256sum --check --status
+          tar -xzf "$RUNNER_TEMP/datamash-1.9.tar.gz" -C "$RUNNER_TEMP"
+          cd "$RUNNER_TEMP/datamash-1.9"
+          ./configure --prefix="$RUNNER_TEMP/oracles/datamash"
+          make -j2
+          make install
+          "$RUNNER_TEMP/oracles/datamash/bin/datamash" --version | grep -F 'datamash (GNU datamash) 1.9'
+
+      - name: Build BEDTools 2.31.1
+        run: |
+          git init -q "$RUNNER_TEMP/bedtools2"
+          git -C "$RUNNER_TEMP/bedtools2" remote add origin https://github.com/arq5x/bedtools2.git
+          git -C "$RUNNER_TEMP/bedtools2" fetch -q --depth=1 origin "refs/tags/$BEDTOOLS_TAG"
+          git -C "$RUNNER_TEMP/bedtools2" checkout -q --detach FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/bedtools2" rev-parse HEAD)" = "$BEDTOOLS_REVISION"
+          make -C "$RUNNER_TEMP/bedtools2" -j2
+          "$RUNNER_TEMP/bedtools2/bin/bedtools" --version | grep -F 'v2.31.1'
+
+      - name: Pinned live differentials
+        env:
+          RSOMICS_CSVTK: ${{ runner.temp }}/oracles/csvtk
+          RSOMICS_DATAMASH: ${{ runner.temp }}/oracles/datamash/bin/datamash
+          RSOMICS_BEDTOOLS: ${{ runner.temp }}/bedtools2/bin/bedtools
+        run: cargo test --locked --all-targets --all-features -- --include-ignored
