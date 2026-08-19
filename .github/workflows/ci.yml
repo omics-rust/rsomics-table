@@ -89,20 +89,38 @@ jobs:
         if: matrix.target == 'linux-x86_64'
         run: cargo package --locked
 
-      - name: Build benchmark artifacts
-        if: matrix.target == 'linux-x86_64' && github.event_name == 'push'
+  benchmark-artifact:
+    name: linux-x86_64-benchmark-artifact
+    if: github.event_name == 'push'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust 1.91
+        uses: dtolnay/rust-toolchain@1.91.0
+
+      - name: Build artifacts
         run: |
           cargo build --release --locked
-          rustc --edition 2024 -O benchmarks/compare-groupby.rs -o target/release/compare-groupby
+          mkdir benchmark-artifact
+          cp target/release/rsomics-table benchmark-artifact/
+          rustc --edition 2024 -O benchmarks/compare-groupby.rs -o benchmark-artifact/compare-groupby
+          {
+            rustc -Vv
+            cargo -V
+            ldd --version | head -n 1
+            sha256sum benchmark-artifact/rsomics-table benchmark-artifact/compare-groupby
+          } > benchmark-artifact/build-manifest.txt
+          ldd benchmark-artifact/rsomics-table
+          ldd benchmark-artifact/compare-groupby
 
-      - name: Upload benchmark artifacts
-        if: matrix.target == 'linux-x86_64' && github.event_name == 'push'
+      - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: rsomics-table-linux-x86_64-${{ github.sha }}
-          path: |
-            target/release/rsomics-table
-            target/release/compare-groupby
+          path: benchmark-artifact
           if-no-files-found: error
           retention-days: 7
 
