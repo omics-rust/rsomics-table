@@ -96,3 +96,8 @@ rsomics-table groupby --tsv --group sample,feature --aggregate value:mean matrix
 key reappears later. Numeric cells fail loudly by default;
 `--ignore-non-numeric` skips them and reports the number skipped. Numeric,
 order-statistic, and text operations are listed in `groupby --help`.
+
+Release compatibility is pinned to csvtk 0.37.0, GNU datamash 1.9, and
+BEDTools 2.31.1. Their operation-specific roles, revisions, licenses, and the
+historical team-owned source record are in
+[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
