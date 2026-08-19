@@ -26,7 +26,7 @@ done
 mkdir -p "$root/bin" "$root/cache" "$root/downloads" "$root/source" "$root/toolchain"
 
 go_archive=$root/downloads/go1.25.5.linux-amd64.tar.gz
-curl -fsSLo "$go_archive" https://go.dev/dl/go1.25.5.linux-amd64.tar.gz
+curl -fsSLo "$go_archive" https://dl.google.com/go/go1.25.5.linux-amd64.tar.gz
 echo "$go_sha256  $go_archive" | sha256sum --check --status
 tar -xzf "$go_archive" -C "$root/toolchain"
 go=$root/toolchain/go/bin/go
