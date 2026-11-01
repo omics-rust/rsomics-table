@@ -12,32 +12,79 @@ permissions:
 env:
   CSVTK_REVISION: cc94b40d35cef9188d19f961718d9630479827c0
   CSVTK_TAG: v0.37.0
+  CARGO_BUILD_JOBS: '2'
+  PYTHONDONTWRITEBYTECODE: '1'
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   native:
     name: ${{ matrix.target }}
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         include:
           - target: linux-x86_64
             runner: ubuntu-24.04
+            host: x86_64-unknown-linux-gnu
           - target: linux-aarch64
             runner: ubuntu-24.04-arm
+            host: aarch64-unknown-linux-gnu
           - target: macos-x86_64
             runner: macos-15-intel
+            host: x86_64-apple-darwin
           - target: macos-aarch64
             runner: macos-15
+            host: aarch64-apple-darwin
+    env:
+      NATIVE_TARGET: ${{ matrix.target }}
+      EXPECTED_HOST: ${{ matrix.host }}
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Prepare runner storage
+        run: |
+          set -euo pipefail
+          for pair in CARGO_HOME=cargo-home CARGO_TARGET_DIR=cargo-target RUSTUP_HOME=rustup-home TMPDIR=scratch XDG_CACHE_HOME=cache GOPATH=go GOCACHE=cache/go-build GOMODCACHE=cache/go-mod; do
+            name="${pair%%=*}"
+            path="$RUNNER_TEMP/${pair#*=}"
+            mkdir -p "$path"
+            printf '%s=%s\n' "$name" "$path" >> "$GITHUB_ENV"
+          done
+          mkdir -p "$RUNNER_TEMP/delivery"
+          python3 -B - <<'PY'
+          import os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']).resolve(strict=True)
+          for name in ('cargo-home', 'cargo-target', 'rustup-home', 'scratch', 'cache', 'go', 'cache/go-build', 'cache/go-mod'):
+              path = (root / name).resolve(strict=True)
+              assert path.is_relative_to(root) and path.stat().st_dev == root.stat().st_dev
+              print(path)
+          PY
+          git rev-parse HEAD
+          uname -a
+          df -h "$RUNNER_TEMP"
 
       - name: Install Rust 1.91
         uses: dtolnay/rust-toolchain@1.91.0
         with:
           components: clippy,rustfmt
+
+      - name: Verify actual native host and resolved target
+        run: |
+          set -euo pipefail
+          rustc -Vv
+          test "$(rustc -Vv | sed -n 's/^host: //p')" = "$EXPECTED_HOST"
+          cargo metadata --locked --no-deps --format-version 1 | python3 -B -c \
+            'import json,os,sys; assert json.load(sys.stdin)["target_directory"] == os.environ["CARGO_TARGET_DIR"]'
 
       - name: Install Go 1.25.5
         uses: actions/setup-go@v6
@@ -58,7 +105,6 @@ jobs:
           "$RUNNER_TEMP/oracles/csvtk" version | grep -F 'csvtk v0.37.0'
 
       - name: Format
-        if: matrix.target == 'linux-x86_64'
         run: cargo fmt --all -- --check
 
       - name: Benchmark comparator tests
@@ -68,7 +114,6 @@ jobs:
           "$RUNNER_TEMP/compare-groupby-tests"
 
       - name: Strict Clippy
-        if: matrix.target == 'linux-x86_64'
         run: cargo clippy --locked --all-targets --all-features -- -D warnings
 
       - name: Test debug
@@ -85,18 +130,55 @@ jobs:
           --test select_compat --test filter_compat --test sort_compat --test join_compat
           -- --ignored
 
-      - name: Verify package
-        if: matrix.target == 'linux-x86_64'
-        run: cargo package --locked
+      - name: Verify complete source package
+        run: |
+          set -euo pipefail
+          cargo metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/delivery/package-metadata.json"
+          cargo package --locked --list > "$RUNNER_TEMP/delivery/package-files.txt"
+          cargo package --locked > "$RUNNER_TEMP/delivery/package.stdout" 2> "$RUNNER_TEMP/delivery/package.stderr"
+          python3 -B scripts/delivery.py source
+
+      - name: Test packaged release
+        run: cargo test --manifest-path "$PACKAGE_DIRECTORY/Cargo.toml" --release --locked --all-targets --all-features
+
+      - name: Install and exercise packaged binary
+        run: |
+          set -euo pipefail
+          cargo install --path "$PACKAGE_DIRECTORY" --locked --root "$RUNNER_TEMP/installed" \
+            > "$RUNNER_TEMP/delivery/install.stdout" 2> "$RUNNER_TEMP/delivery/install.stderr"
+          python3 -B "$PACKAGE_DIRECTORY/scripts/delivery.py" smoke --binary "$RUNNER_TEMP/installed/bin/rsomics-table"
+
+      - name: Assemble native delivery candidate
+        run: python3 -B scripts/delivery.py bundle --binary "$RUNNER_TEMP/installed/bin/rsomics-table"
+
+      - name: Retain source and native delivery candidates
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsomics-table-delivery-${{ matrix.target }}-${{ github.sha }}
+          path: ${{ runner.temp }}/delivery/
+          if-no-files-found: error
+          retention-days: 90
 
   benchmark-artifact:
     name: linux-x86_64-benchmark-artifact
     if: github.event_name == 'push'
     runs-on: ubuntu-22.04
     timeout-minutes: 15
+    env:
+      CARGO_HOME: ${{ runner.temp }}/cargo-home
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
+      RUSTUP_HOME: ${{ runner.temp }}/rustup-home
+      TMPDIR: ${{ runner.temp }}/scratch
+      XDG_CACHE_HOME: ${{ runner.temp }}/cache
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Prepare runner storage
+        run: mkdir -p "$CARGO_HOME" "$CARGO_TARGET_DIR" "$RUSTUP_HOME" "$TMPDIR" "$XDG_CACHE_HOME"
 
       - name: Install Rust 1.91
         uses: dtolnay/rust-toolchain@1.91.0
@@ -105,7 +187,7 @@ jobs:
         run: |
           cargo build --release --locked
           mkdir benchmark-artifact
-          cp target/release/rsomics-table benchmark-artifact/
+          cp "$CARGO_TARGET_DIR/release/rsomics-table" benchmark-artifact/
           rustc --edition 2024 -O benchmarks/compare-groupby.rs -o benchmark-artifact/compare-groupby
           {
             rustc -Vv
@@ -122,7 +204,7 @@ jobs:
           name: rsomics-table-linux-x86_64-${{ github.sha }}
           path: benchmark-artifact
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 90
 
   oracle:
     name: linux-x86_64-oracles
@@ -132,9 +214,22 @@ jobs:
       BEDTOOLS_REVISION: 705ccfdf2c9a77d71560c8adcece0663c2f5e18e
       BEDTOOLS_TAG: v2.31.1
       DATAMASH_SHA256: f382ebda03650dd679161f758f9c0a6cc9293213438d4a77a8eda325aacb87d2
+      CARGO_HOME: ${{ runner.temp }}/cargo-home
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
+      RUSTUP_HOME: ${{ runner.temp }}/rustup-home
+      TMPDIR: ${{ runner.temp }}/scratch
+      XDG_CACHE_HOME: ${{ runner.temp }}/cache
+      GOPATH: ${{ runner.temp }}/go
+      GOCACHE: ${{ runner.temp }}/cache/go-build
+      GOMODCACHE: ${{ runner.temp }}/cache/go-mod
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Prepare runner storage
+        run: mkdir -p "$CARGO_HOME" "$CARGO_TARGET_DIR" "$RUSTUP_HOME" "$TMPDIR" "$XDG_CACHE_HOME" "$GOPATH" "$GOCACHE" "$GOMODCACHE"
 
       - name: Install Rust 1.91
         uses: dtolnay/rust-toolchain@1.91.0

@@ -2,8 +2,14 @@
 
 Strict, high-performance CSV and TSV workflows for bioinformatics.
 
+The six-operation 0.1.0 candidate is not yet published to crates.io. Native
+GitHub release archives for Linux/macOS on x86_64/aarch64 are being qualified;
+no release download is advertised before that gate passes.
+
+To build the checked-out source with Rust 1.91 or newer:
+
 ```bash
-cargo install rsomics-table
+cargo install --path . --locked
 ```
 
 Only completed operations appear in the command help:
@@ -108,3 +114,11 @@ historical team-owned source record are in
 
 The deterministic release workload, pinned-oracle builder, output checks, and
 measurement protocol are in [benchmarks](benchmarks/README.md).
+
+The accepted 2026-08-20 measurements belong to implementation revision
+`2bd0fd3698c152bb27e7d0d7635d51fb41655112` and its measured executable, not
+the new delivery binaries. Numeric sorting trades higher memory for throughput;
+high-cardinality global grouping uses less memory but loses throughput. The
+delivery work changes packaging, notices and CI, not those six implementations
+or the locked dependencies. Original dependency terms and per-target enabled
+graphs are included in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
