@@ -2,9 +2,12 @@
 
 Strict, high-performance CSV and TSV workflows for bioinformatics.
 
-The six-operation 0.1.0 candidate is not yet published to crates.io. Native
-GitHub release archives for Linux/macOS on x86_64/aarch64 are being qualified;
-no release download is advertised before that gate passes.
+The six-operation 0.1.0 release is available as [native GitHub archives](https://github.com/omics-rust/rsomics-table/releases/tag/v0.1.0)
+for Linux/macOS on x86_64/aarch64, with checksums, original dependency terms
+and a locked source package. Download the matching archive, check its SHA-256
+against `SHA256SUMS`, unpack it and run the included `rsomics-table` binary.
+These archives are not signed or notarized. Crates.io publication remains on
+hold; `cargo install rsomics-table` is not an advertised installation route.
 
 To build the checked-out source with Rust 1.91 or newer:
 
