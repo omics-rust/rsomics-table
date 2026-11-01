@@ -165,20 +165,20 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-22.04
     timeout-minutes: 15
-    env:
-      CARGO_HOME: ${{ runner.temp }}/cargo-home
-      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
-      RUSTUP_HOME: ${{ runner.temp }}/rustup-home
-      TMPDIR: ${{ runner.temp }}/scratch
-      XDG_CACHE_HOME: ${{ runner.temp }}/cache
-
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
 
       - name: Prepare runner storage
-        run: mkdir -p "$CARGO_HOME" "$CARGO_TARGET_DIR" "$RUSTUP_HOME" "$TMPDIR" "$XDG_CACHE_HOME"
+        run: |
+          set -euo pipefail
+          for pair in CARGO_HOME=cargo-home CARGO_TARGET_DIR=cargo-target RUSTUP_HOME=rustup-home TMPDIR=scratch XDG_CACHE_HOME=cache; do
+            name="${pair%%=*}"
+            path="$RUNNER_TEMP/${pair#*=}"
+            mkdir -p "$path"
+            printf '%s=%s\n' "$name" "$path" >> "$GITHUB_ENV"
+          done
 
       - name: Install Rust 1.91
         uses: dtolnay/rust-toolchain@1.91.0
@@ -214,22 +214,20 @@ jobs:
       BEDTOOLS_REVISION: 705ccfdf2c9a77d71560c8adcece0663c2f5e18e
       BEDTOOLS_TAG: v2.31.1
       DATAMASH_SHA256: f382ebda03650dd679161f758f9c0a6cc9293213438d4a77a8eda325aacb87d2
-      CARGO_HOME: ${{ runner.temp }}/cargo-home
-      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
-      RUSTUP_HOME: ${{ runner.temp }}/rustup-home
-      TMPDIR: ${{ runner.temp }}/scratch
-      XDG_CACHE_HOME: ${{ runner.temp }}/cache
-      GOPATH: ${{ runner.temp }}/go
-      GOCACHE: ${{ runner.temp }}/cache/go-build
-      GOMODCACHE: ${{ runner.temp }}/cache/go-mod
-
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
 
       - name: Prepare runner storage
-        run: mkdir -p "$CARGO_HOME" "$CARGO_TARGET_DIR" "$RUSTUP_HOME" "$TMPDIR" "$XDG_CACHE_HOME" "$GOPATH" "$GOCACHE" "$GOMODCACHE"
+        run: |
+          set -euo pipefail
+          for pair in CARGO_HOME=cargo-home CARGO_TARGET_DIR=cargo-target RUSTUP_HOME=rustup-home TMPDIR=scratch XDG_CACHE_HOME=cache GOPATH=go GOCACHE=cache/go-build GOMODCACHE=cache/go-mod; do
+            name="${pair%%=*}"
+            path="$RUNNER_TEMP/${pair#*=}"
+            mkdir -p "$path"
+            printf '%s=%s\n' "$name" "$path" >> "$GITHUB_ENV"
+          done
 
       - name: Install Rust 1.91
         uses: dtolnay/rust-toolchain@1.91.0
