@@ -38,6 +38,9 @@ pub(crate) enum Command {
 
     /// Aggregate records by checked table keys.
     Groupby(GroupbyArgs),
+
+    #[command(hide = true)]
+    Crosstab(CrosstabArgs),
 }
 
 #[derive(Debug, Args)]
@@ -297,6 +300,38 @@ pub(crate) struct GroupbyArgs {
 }
 
 impl GroupbyArgs {
+    pub(crate) fn resolved_output_delimiter(&self) -> u8 {
+        self.output
+            .resolved_delimiter(self.input.resolved_delimiter())
+    }
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct CrosstabArgs {
+    #[command(flatten)]
+    pub(crate) input: InputArgs,
+
+    /// Field identifying matrix rows.
+    #[arg(long, allow_hyphen_values = true)]
+    pub(crate) row: String,
+
+    /// Field identifying matrix columns.
+    #[arg(long, allow_hyphen_values = true)]
+    pub(crate) column: String,
+
+    /// Cell aggregate as FIELD:OPERATION; defaults to counting records.
+    #[arg(short = 'a', long, allow_hyphen_values = true)]
+    pub(crate) aggregate: Option<String>,
+
+    /// Value for absent row/column pairs.
+    #[arg(long, default_value = "N/A")]
+    pub(crate) filler: String,
+
+    #[command(flatten)]
+    pub(crate) output: TableOutputArgs,
+}
+
+impl CrosstabArgs {
     pub(crate) fn resolved_output_delimiter(&self) -> u8 {
         self.output
             .resolved_delimiter(self.input.resolved_delimiter())

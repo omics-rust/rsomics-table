@@ -184,6 +184,32 @@ impl Plan {
         header: Option<&[Vec<u8>]>,
         collapse_delimiter: &str,
     ) -> Result<Self> {
+        Self::compile_inner(
+            group,
+            aggregate_specs,
+            width,
+            header,
+            collapse_delimiter,
+            true,
+        )
+    }
+
+    pub(crate) fn compile_cell(
+        aggregate: &str,
+        width: usize,
+        header: Option<&[Vec<u8>]>,
+    ) -> Result<Self> {
+        Self::compile_inner(None, &[aggregate.to_owned()], width, header, ",", false)
+    }
+
+    fn compile_inner(
+        group: Option<&str>,
+        aggregate_specs: &[String],
+        width: usize,
+        header: Option<&[Vec<u8>]>,
+        collapse_delimiter: &str,
+        output_labels: bool,
+    ) -> Result<Self> {
         if aggregate_specs.is_empty() {
             return Err(invalid("at least one aggregate is required"));
         }
@@ -234,7 +260,11 @@ impl Plan {
                 numeric_slot,
             });
         }
-        let output_header = build_header(header, &group_fields, &aggregates, &requests)?;
+        let output_header = if output_labels {
+            build_header(header, &group_fields, &aggregates, &requests)?
+        } else {
+            None
+        };
         Ok(Self {
             group_fields,
             aggregates,

@@ -1,3 +1,4 @@
+pub(crate) mod crosstab;
 pub(crate) mod filter;
 pub(crate) mod groupby;
 pub(crate) mod join;

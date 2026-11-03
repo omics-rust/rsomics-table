@@ -53,6 +53,12 @@ fn main() -> std::process::ExitCode {
             let json = output.json;
             run(&output, META, || operations::groupby::run(&arguments, json))
         }
+        cli::Command::Crosstab(arguments) => {
+            let json = output.json;
+            run(&output, META, || {
+                operations::crosstab::run(&arguments, json)
+            })
+        }
     }
 }
 

@@ -1,0 +1,420 @@
+{
+  "platform": "macOS-27.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "cpu": "Apple M2",
+  "head": "ac3788aafae0d5b9a1e0829e6c1b1c4743743bc8",
+  "dirty_status": " M src/aggregate.rs\n M src/cli.rs\n M src/main.rs\n M src/operations.rs\n?? src/operations/crosstab.rs\n?? tests/crosstab_cli.rs\n",
+  "rows": 5000000,
+  "commands": {
+    "count": {
+      "native": [
+        "/Volumes/KIOXIA/Developments/tmp/table-crosstab-oracle-20261103.2rpinuLR/performance-corrected/native",
+        "crosstab",
+        "--tsv",
+        "--row",
+        "sample",
+        "--column",
+        "feature",
+        "/Volumes/KIOXIA/Developments/tmp/table-crosstab-oracle-20261103.2rpinuLR/performance/measurements.tsv"
+      ],
+      "source": [
+        "/Volumes/KIOXIA/Developments/tmp/table-crosstab-oracle-20261103.2rpinuLR/datamash-1.9/datamash",
+        "--sort",
+        "--header-in",
+        "crosstab",
+        "sample,feature"
+      ]
+    },
+    "sum": {
+      "native": [
+        "/Volumes/KIOXIA/Developments/tmp/table-crosstab-oracle-20261103.2rpinuLR/performance-corrected/native",
+        "crosstab",
+        "--tsv",
+        "--row",
+        "sample",
+        "--column",
+        "feature",
+        "--aggregate",
+        "value:sum",
+        "/Volumes/KIOXIA/Developments/tmp/table-crosstab-oracle-20261103.2rpinuLR/performance/measurements.tsv"
+      ],
+      "source": [
+        "/Volumes/KIOXIA/Developments/tmp/table-crosstab-oracle-20261103.2rpinuLR/datamash-1.9/datamash",
+        "--sort",
+        "--header-in",
+        "crosstab",
+        "sample,feature",
+        "sum",
+        "value"
+      ]
+    }
+  },
+  "samples": [
+    {
+      "operation": "count",
+      "iteration": 0,
+      "warmup": true,
+      "implementation": "native",
+      "wall_seconds": 0.612634208,
+      "peak_rss_bytes": 7274496,
+      "output_sha256": "6b6182344a79501877e4fc2a412a16f7ad489007f322edc7b33d27287ace62a5"
+    },
+    {
+      "operation": "count",
+      "iteration": 0,
+      "warmup": true,
+      "implementation": "source",
+      "wall_seconds": 3.3386637909999997,
+      "peak_rss_bytes": 590036992,
+      "output_sha256": "6b6182344a79501877e4fc2a412a16f7ad489007f322edc7b33d27287ace62a5"
+    },
+    {
+      "operation": "count",
+      "iteration": 1,
+      "warmup": false,
+      "implementation": "source",
+      "wall_seconds": 3.032327541,
+      "peak_rss_bytes": 624656384,
+      "output_sha256": "6b6182344a79501877e4fc2a412a16f7ad489007f322edc7b33d27287ace62a5"
+    },
+    {
+      "operation": "count",
+      "iteration": 1,
+      "warmup": false,
+      "implementation": "native",
+      "wall_seconds": 0.4920676250000007,
+      "peak_rss_bytes": 7290880,
+      "output_sha256": "6b6182344a79501877e4fc2a412a16f7ad489007f322edc7b33d27287ace62a5"
+    },
+    {
+      "operation": "count",
+      "iteration": 2,
+      "warmup": false,
+      "implementation": "native",
+      "wall_seconds": 0.48358520799999916,
+      "peak_rss_bytes": 7290880,
+      "output_sha256": "6b6182344a79501877e4fc2a412a16f7ad489007f322edc7b33d27287ace62a5"
+    },
+    {
+      "operation": "count",
+      "iteration": 2,
+      "warmup": false,
+      "implementation": "source",
+      "wall_seconds": 3.084671125,
+      "peak_rss_bytes": 624656384,
+      "output_sha256": "6b6182344a79501877e4fc2a412a16f7ad489007f322edc7b33d27287ace62a5"
+    },
+    {
+      "operation": "count",
+      "iteration": 3,
+      "warmup": false,
+      "implementation": "source",
+      "wall_seconds": 2.8708924999999983,
+      "peak_rss_bytes": 624689152,
+      "output_sha256": "6b6182344a79501877e4fc2a412a16f7ad489007f322edc7b33d27287ace62a5"
+    },
+    {
+      "operation": "count",
+      "iteration": 3,
+      "warmup": false,
+      "implementation": "native",
+      "wall_seconds": 0.48850887499999907,
+      "peak_rss_bytes": 7258112,
+      "output_sha256": "6b6182344a79501877e4fc2a412a16f7ad489007f322edc7b33d27287ace62a5"
+    },
+    {
+      "operation": "count",
+      "iteration": 4,
+      "warmup": false,
+      "implementation": "native",
+      "wall_seconds": 0.482747625,
+      "peak_rss_bytes": 7307264,
+      "output_sha256": "6b6182344a79501877e4fc2a412a16f7ad489007f322edc7b33d27287ace62a5"
+    },
+    {
+      "operation": "count",
+      "iteration": 4,
+      "warmup": false,
+      "implementation": "source",
+      "wall_seconds": 2.994733166999998,
+      "peak_rss_bytes": 624640000,
+      "output_sha256": "6b6182344a79501877e4fc2a412a16f7ad489007f322edc7b33d27287ace62a5"
+    },
+    {
+      "operation": "count",
+      "iteration": 5,
+      "warmup": false,
+      "implementation": "source",
+      "wall_seconds": 3.3551692499999994,
+      "peak_rss_bytes": 612335616,
+      "output_sha256": "6b6182344a79501877e4fc2a412a16f7ad489007f322edc7b33d27287ace62a5"
+    },
+    {
+      "operation": "count",
+      "iteration": 5,
+      "warmup": false,
+      "implementation": "native",
+      "wall_seconds": 0.6754863340000021,
+      "peak_rss_bytes": 7258112,
+      "output_sha256": "6b6182344a79501877e4fc2a412a16f7ad489007f322edc7b33d27287ace62a5"
+    },
+    {
+      "operation": "sum",
+      "iteration": 0,
+      "warmup": true,
+      "implementation": "native",
+      "wall_seconds": 0.5850056660000007,
+      "peak_rss_bytes": 7356416,
+      "output_sha256": "00e5cf1a9c9b48f944d987e5ef72e81e1dd05a4fff8360e2953e9ff814f79735"
+    },
+    {
+      "operation": "sum",
+      "iteration": 0,
+      "warmup": true,
+      "implementation": "source",
+      "wall_seconds": 3.5087793329999997,
+      "peak_rss_bytes": 568950784,
+      "output_sha256": "00e5cf1a9c9b48f944d987e5ef72e81e1dd05a4fff8360e2953e9ff814f79735"
+    },
+    {
+      "operation": "sum",
+      "iteration": 1,
+      "warmup": false,
+      "implementation": "source",
+      "wall_seconds": 3.214648874999998,
+      "peak_rss_bytes": 624656384,
+      "output_sha256": "00e5cf1a9c9b48f944d987e5ef72e81e1dd05a4fff8360e2953e9ff814f79735"
+    },
+    {
+      "operation": "sum",
+      "iteration": 1,
+      "warmup": false,
+      "implementation": "native",
+      "wall_seconds": 0.5570389169999999,
+      "peak_rss_bytes": 7323648,
+      "output_sha256": "00e5cf1a9c9b48f944d987e5ef72e81e1dd05a4fff8360e2953e9ff814f79735"
+    },
+    {
+      "operation": "sum",
+      "iteration": 2,
+      "warmup": false,
+      "implementation": "native",
+      "wall_seconds": 0.5572351669999982,
+      "peak_rss_bytes": 7340032,
+      "output_sha256": "00e5cf1a9c9b48f944d987e5ef72e81e1dd05a4fff8360e2953e9ff814f79735"
+    },
+    {
+      "operation": "sum",
+      "iteration": 2,
+      "warmup": false,
+      "implementation": "source",
+      "wall_seconds": 3.0127636250000016,
+      "peak_rss_bytes": 624623616,
+      "output_sha256": "00e5cf1a9c9b48f944d987e5ef72e81e1dd05a4fff8360e2953e9ff814f79735"
+    },
+    {
+      "operation": "sum",
+      "iteration": 3,
+      "warmup": false,
+      "implementation": "source",
+      "wall_seconds": 3.010884292,
+      "peak_rss_bytes": 624148480,
+      "output_sha256": "00e5cf1a9c9b48f944d987e5ef72e81e1dd05a4fff8360e2953e9ff814f79735"
+    },
+    {
+      "operation": "sum",
+      "iteration": 3,
+      "warmup": false,
+      "implementation": "native",
+      "wall_seconds": 0.5538466249999985,
+      "peak_rss_bytes": 7340032,
+      "output_sha256": "00e5cf1a9c9b48f944d987e5ef72e81e1dd05a4fff8360e2953e9ff814f79735"
+    },
+    {
+      "operation": "sum",
+      "iteration": 4,
+      "warmup": false,
+      "implementation": "native",
+      "wall_seconds": 0.5457180420000043,
+      "peak_rss_bytes": 7340032,
+      "output_sha256": "00e5cf1a9c9b48f944d987e5ef72e81e1dd05a4fff8360e2953e9ff814f79735"
+    },
+    {
+      "operation": "sum",
+      "iteration": 4,
+      "warmup": false,
+      "implementation": "source",
+      "wall_seconds": 3.0414237079999964,
+      "peak_rss_bytes": 620101632,
+      "output_sha256": "00e5cf1a9c9b48f944d987e5ef72e81e1dd05a4fff8360e2953e9ff814f79735"
+    },
+    {
+      "operation": "sum",
+      "iteration": 5,
+      "warmup": false,
+      "implementation": "source",
+      "wall_seconds": 2.9712917080000025,
+      "peak_rss_bytes": 624656384,
+      "output_sha256": "00e5cf1a9c9b48f944d987e5ef72e81e1dd05a4fff8360e2953e9ff814f79735"
+    },
+    {
+      "operation": "sum",
+      "iteration": 5,
+      "warmup": false,
+      "implementation": "native",
+      "wall_seconds": 0.5465860830000011,
+      "peak_rss_bytes": 7323648,
+      "output_sha256": "00e5cf1a9c9b48f944d987e5ef72e81e1dd05a4fff8360e2953e9ff814f79735"
+    }
+  ],
+  "files": {
+    "/Volumes/KIOXIA/Developments/tmp/table-crosstab-oracle-20261103.2rpinuLR/performance/measurements.tsv": {
+      "bytes": 59600021,
+      "sha256": "b2f0d367e3850a16b72012aac0dffd66e888240b5e657229fcc51c55f23c8b31"
+    },
+    "/Volumes/KIOXIA/Developments/tmp/table-crosstab-oracle-20261103.2rpinuLR/performance-corrected/native": {
+      "bytes": 3599552,
+      "sha256": "e05cc3fb3dffad513ae3376cfe68541de1741816af7dd5b9d036c3a50161c9e6"
+    },
+    "/Volumes/KIOXIA/Developments/tmp/table-crosstab-oracle-20261103.2rpinuLR/datamash-1.9/datamash": {
+      "bytes": 223304,
+      "sha256": "200b708dc7e69b1d533a72d02e115d2f57f87c9c28e77bbdb7ad2c3e71e08cef"
+    },
+    "/Volumes/KIOXIA/Developments/tmp/table-crosstab-oracle-20261103.2rpinuLR/datamash-1.9.tar.gz": {
+      "bytes": 2653588,
+      "sha256": "f382ebda03650dd679161f758f9c0a6cc9293213438d4a77a8eda325aacb87d2"
+    },
+    "/Volumes/KIOXIA/Developments/tmp/table-crosstab-oracle-20261103.2rpinuLR/measure.py": {
+      "bytes": 3769,
+      "sha256": "a94e2f90f3067969004c30609630d0ada4ae16b1a9b442152f5ec5cd78d0c8a2"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/join.rs": {
+      "bytes": 5866,
+      "sha256": "7876cf64119ffa39a769e71ac3bda53650a9ed1d7e7086609411da2c9f9bfa6b"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/dialect.rs": {
+      "bytes": 1292,
+      "sha256": "3fed2c6bd4b754ffd5f36fb626bd4dea0cc24488c2f3aaa62e8f7a7b57010de2"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/io.rs": {
+      "bytes": 113,
+      "sha256": "ba58a051263995851f803401bc2947d4503a1580d2deb91af573a4dc08027000"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/fields.rs": {
+      "bytes": 13101,
+      "sha256": "a4055feb93717f845ded59a9bc7f1d6c97f19becd426f0d6264e1ed3221fd6f5"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/aggregate.rs": {
+      "bytes": 15427,
+      "sha256": "1b62f53bb18b7518068397ee74842798d2af5b8ea1f1b9ca8b39ca516232288a"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/expression.rs": {
+      "bytes": 10186,
+      "sha256": "0e556ba5140af413a6e29a56876f495e2947186b2ae1024ba0e8f149cb9b098a"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/main.rs": {
+      "bytes": 2492,
+      "sha256": "84d10df99af59d4e892b9e3769e14a99c0beef9c15058d5036641401cec35ad5"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/ordering.rs": {
+      "bytes": 7367,
+      "sha256": "a38a142e96040913d773e1a2c4afe567487646b0273744b48dfe2ad9cce94f9e"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/operations.rs": {
+      "bytes": 162,
+      "sha256": "d968db8441e2ad69743711081a138e9f9791c7a27ade0b2c7a398a6ff3d19468"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/cli.rs": {
+      "bytes": 11032,
+      "sha256": "09e756efe7702f9102f4a34f62acec93cb2b79e211a6246c93989ab9d9bad952"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/aggregate/order.rs": {
+      "bytes": 3608,
+      "sha256": "e2abafc6d08795c1cc227ce1249bfec88705055f11e44d9ed26d5c37c8130ce0"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/aggregate/numeric.rs": {
+      "bytes": 13847,
+      "sha256": "d1f7f162613260d6290696b1166e4d36e389cbb15702e81f9688662d4840d2c2"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/aggregate/text.rs": {
+      "bytes": 4819,
+      "sha256": "8e934b22a3e2132a351bb9db6bd63437eb6d0c38ab7c22c9007d8328555dff87"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/io/output.rs": {
+      "bytes": 2522,
+      "sha256": "85bf5fcabaac655da566882c5c91472c40a56356051204105e7bc8ee09d95abd"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/io/table.rs": {
+      "bytes": 2072,
+      "sha256": "aa13d110c473996d8b1f487c0c9d1915d234d1641236283fea69f5f07c828b61"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/io/input.rs": {
+      "bytes": 1852,
+      "sha256": "1db2bc5c512114e637d054a5109ea2546069e1f5a99d0e7426f89a2801fc1a2d"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/io/writer.rs": {
+      "bytes": 2857,
+      "sha256": "26ba6bcee4b6705de7cbdbed860d1cf34280cf85622fb567e237cf3e6ffb8fb8"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/io/reader.rs": {
+      "bytes": 11171,
+      "sha256": "9e4092559a55837bb5b1c4b69d209fb658228668e7e98471a7ba6e6a0bf644a5"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/operations/join.rs": {
+      "bytes": 7418,
+      "sha256": "275bfc54f48422c3ceefa8554d2369fa29adccc5980b1de09226bc188067a319"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/operations/sort.rs": {
+      "bytes": 3490,
+      "sha256": "897a02b4c0026c360c3894ca50bade2bd206a2da2816addaaa0c44f57936e324"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/operations/groupby.rs": {
+      "bytes": 7147,
+      "sha256": "f0b829d67880692e8456bf51d4081d92638cef1859a57c5b2d9a7a01b629d31a"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/operations/select.rs": {
+      "bytes": 3467,
+      "sha256": "ab501d2cca2837458bb972bd4af84971f3fc46d8a67d672de126d672ab9dfc8a"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/operations/filter.rs": {
+      "bytes": 3459,
+      "sha256": "a88aa72a6664c48fbc84f9df21bb713adf848bba1d0d3fd2fbd3f07b927f6215"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/operations/crosstab.rs": {
+      "bytes": 4812,
+      "sha256": "78a4df879aed18baa840dd205ddb2db5faaa911ebaf6df2c7aeca7ac0272fe0e"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/operations/validate.rs": {
+      "bytes": 5246,
+      "sha256": "74b32a6f3ca5923f6f4d6dda98c766f5062557b1f78b0dc145d414e57f6aed72"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/ordering/quicksort.rs": {
+      "bytes": 7270,
+      "sha256": "27cec7cfd675e4a50564902070707d49dc2adf52ace9443d04da024fc2699ebd"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/ordering/natural.rs": {
+      "bytes": 2044,
+      "sha256": "b315fc4edcc5b9a32466285178002e93c58727b928deb780dbf9120d0c2a7a3c"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/expression/value.rs": {
+      "bytes": 1265,
+      "sha256": "419b33e3755fc8e8e1b6d3aa863ba2ef80303f85009e41ebfb4e25cff3518fcc"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/expression/lexer.rs": {
+      "bytes": 9607,
+      "sha256": "dc528305ac58b36f73b0d49d5fa9405a02330e4008fe19066178184d565700c0"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/src/expression/parser.rs": {
+      "bytes": 7086,
+      "sha256": "2551ee78e3f36e2e1566100a1a2cb1da9d72b1fa0c81e10f16084c2e595c1327"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/Cargo.toml": {
+      "bytes": 697,
+      "sha256": "f332d08bb38fb046f4cb539853ff25b8f9e8a7d43b3052393a0647b1b92b1ad0"
+    },
+    "/Volumes/KIOXIA/Documents/omics-rust/rsomics-table/Cargo.lock": {
+      "bytes": 14311,
+      "sha256": "46e3154025aeba52e7a7523874f3e39642a0e1a42e8dd7dd62178a775d16af94"
+    }
+  }
+}
