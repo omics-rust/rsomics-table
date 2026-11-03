@@ -2,7 +2,7 @@
 
 Strict, high-performance CSV and TSV workflows for bioinformatics.
 
-The six-operation 0.1.0 release is available as [native GitHub archives](https://github.com/omics-rust/rsomics-table/releases/tag/v0.1.0)
+The seven-operation 0.2.0 release is available as [native GitHub archives](https://github.com/omics-rust/rsomics-table/releases/tag/v0.2.0)
 for Linux/macOS on x86_64/aarch64, with checksums, original dependency terms
 and a locked source package. Download the matching archive, check its SHA-256
 against `SHA256SUMS`, unpack it and run the included `rsomics-table` binary.
@@ -15,8 +15,7 @@ To build the checked-out source with Rust 1.91 or newer:
 cargo install --path . --locked
 ```
 
-The checked-out 0.2.0 candidate adds `crosstab`; it has not replaced the
-published 0.1.0 archives above. Its seven operations are:
+The seven operations are:
 
 ```text
 rsomics-table validate [OPTIONS] [TABLE]
