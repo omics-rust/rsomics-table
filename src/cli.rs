@@ -39,7 +39,7 @@ pub(crate) enum Command {
     /// Aggregate records by checked table keys.
     Groupby(GroupbyArgs),
 
-    #[command(hide = true)]
+    /// Pivot long measurements into a sorted matrix.
     Crosstab(CrosstabArgs),
 }
 

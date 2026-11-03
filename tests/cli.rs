@@ -15,7 +15,7 @@ fn help(command: &str) -> String {
 }
 
 #[test]
-fn root_exposes_exactly_six_product_operations() {
+fn root_exposes_exactly_seven_product_operations() {
     let output = run(&["--help"]);
     assert!(output.status.success());
     let help = String::from_utf8(output.stdout).unwrap();
@@ -29,19 +29,23 @@ fn root_exposes_exactly_six_product_operations() {
         .collect::<Vec<_>>();
     assert_eq!(
         commands,
-        ["validate", "select", "filter", "sort", "join", "groupby"]
+        [
+            "validate", "select", "filter", "sort", "join", "groupby", "crosstab"
+        ]
     );
 }
 
 #[test]
 fn nested_help_has_stable_sections_and_shared_output_contracts() {
-    for command in ["validate", "select", "filter", "sort", "join", "groupby"] {
+    for command in [
+        "validate", "select", "filter", "sort", "join", "groupby", "crosstab",
+    ] {
         let help = help(command);
         assert!(help.contains("Usage:"), "{command}: {help}");
         assert!(help.contains("Options:"), "{command}: {help}");
         assert!(!help.as_bytes().contains(&0x1b), "{command}: {help}");
     }
-    for command in ["select", "filter", "sort", "join", "groupby"] {
+    for command in ["select", "filter", "sort", "join", "groupby", "crosstab"] {
         let help = help(command);
         assert_eq!(help.matches("--no-output-header").count(), 1, "{command}");
         assert!(help.contains("Omit the output header"), "{command}: {help}");

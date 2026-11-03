@@ -1,6 +1,6 @@
 [package]
 name = "rsomics-table"
-version = "0.1.0"
+version = "0.2.0"
 description = "High-performance CSV and TSV workflows for bioinformatics"
 edition = "2024"
 rust-version = "1.91"

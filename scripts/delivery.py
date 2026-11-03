@@ -1,4 +1,4 @@
-"""Package, install and archive the six-operation table CLI."""
+"""Package, install and archive the table CLI."""
 
 import argparse
 import csv
@@ -159,7 +159,7 @@ def smoke(binary):
     out, _ = run(['--help'])
     commands = out.read_text().split('Commands:\n', 1)[1].split('\n\n', 1)[0]
     require([line.split()[0] for line in commands.splitlines() if line.split()[0] != 'help'] ==
-        ['validate', 'select', 'filter', 'sort', 'join', 'groupby'], 'installed stable operation scope differs')
+        ['validate', 'select', 'filter', 'sort', 'join', 'groupby', 'crosstab'], 'installed stable operation scope differs')
     input_path = directory / 'input.csv'
     input_path.write_text('sample,group,score,note\ns1,ctrl,9,"low, one"\ns2,case,21,"line\ntwo"\n'
         's3,case,30,"say ""yes"""\ns4,ctrl,18,none\ns5,case,24,é\ns6,ctrl,27,ok\n')
@@ -199,6 +199,22 @@ def smoke(binary):
     report = json.loads(out.read_bytes())
     require(report['result']['records'] == 3 and report['result']['fields'] == 3 and
         report['result']['compression'] == 'gzip', 'installed gzip validation differs')
+    measurements = directory / 'measurements.tsv'
+    measurements.write_text('sample\tfeature\tvalue\nb\tx\t21\na\ty\t7\na\tx\t3\na\tx\t40\n')
+    matrix = directory / 'matrix.tsv'
+    run(['crosstab', '--tsv', '--row', 'sample', '--column', 'feature',
+        '--output', matrix, measurements])
+    require(matrix.read_bytes() == b'\tx\ty\na\t2\t1\nb\t1\tN/A\n',
+        'installed crosstab counts, missing cells or axis order differ')
+    sums = directory / 'matrix-sum.tsv.gz'
+    run(['crosstab', '--tsv', '--row', 'sample', '--column', 'feature',
+        '--aggregate', 'value:sum', '--output', sums, measurements])
+    with gzip.open(sums, 'rb') as stream:
+        require(stream.read() == b'\tx\ty\na\t43\t7\nb\t21\tN/A\n',
+            'installed crosstab sums or gzip matrix differ')
+    out, _ = run(['select', '--tsv', '--no-header', '--fields', '1,2', matrix])
+    require(out.read_bytes() == b'\tx\na\t2\nb\t1\n',
+        'installed matrix-to-table positional projection differs')
     invalid, protected = directory / 'invalid.csv', directory / 'protected.csv'
     invalid.write_text('sample,score\ns1,2\ns2\n')
     protected.write_bytes(b'previous result\n')
@@ -207,11 +223,12 @@ def smoke(binary):
         'installed malformed-input failure replaced prior output or lost its diagnostic')
     save(directory / 'VERIFIED.json', dict(installed_binary=identity(binary), calls=records,
         input_records=6, filtered_records=4, joined_records=4, grouped_records=3,
-        stable_operations=['validate','select','filter','sort','join','groupby'],
+        stable_operations=['validate','select','filter','sort','join','groupby','crosstab'],
         sort_worker_outputs_equal=True, quoted_fields_preserved=True, duplicate_join_keys_preserved=True,
         gzip_output_verified=True, failure_preserves_prior_output=True,
         files={p.name:identity(p) for p in directory.iterdir() if p.is_file()},
-        scope='installed six-operation lifecycle only; not new upstream compatibility or performance'))
+        crosstab_count_sum_and_projection_verified=True,
+        scope='installed seven-operation lifecycle only; not new upstream compatibility or performance'))
 
 
 def bundle(binary):
@@ -232,6 +249,8 @@ def bundle(binary):
         source_package=json.loads((delivery / 'package-verification.json').read_bytes()),
         native_dependencies=json.loads((delivery / 'native-dependencies.json').read_bytes()),
         accepted_implementation_base='2bd0fd3698c152bb27e7d0d7635d51fb41655112',
+        crosstab_implementation='463ad7cf18a971c54371fe0314ebe19472574a59',
+        crosstab_performance='benchmarks/2026-11-03/crosstab-samples.json',
         historical_performance_binary_sha256='6e490331da90475cd2eaa84a7e3fc0cd77af381a8cc049bf70261547ad549f34',
         this_binary_remeasured=False, registry_publication=False, signed_release=False)
     save(folder / 'BUILD.json', provenance)

@@ -15,7 +15,8 @@ To build the checked-out source with Rust 1.91 or newer:
 cargo install --path . --locked
 ```
 
-Only completed operations appear in the command help:
+The checked-out 0.2.0 candidate adds `crosstab`; it has not replaced the
+published 0.1.0 archives above. Its seven operations are:
 
 ```text
 rsomics-table validate [OPTIONS] [TABLE]
@@ -24,6 +25,7 @@ rsomics-table filter [OPTIONS] --where <EXPRESSION> [TABLE]
 rsomics-table sort [OPTIONS] [TABLE]
 rsomics-table join [OPTIONS] <LEFT> <RIGHT>
 rsomics-table groupby [OPTIONS] --aggregate <SPEC> [TABLE]
+rsomics-table crosstab [OPTIONS] --row <FIELD> --column <FIELD> [TABLE]
 ```
 
 `validate` checks CSV/TSV quoting, row width, headers, optional UTF-8, and
@@ -110,6 +112,29 @@ key reappears later. Numeric cells fail loudly by default;
 `--ignore-non-numeric` skips them and reports the number skipped. Numeric,
 order-statistic, and text operations are listed in `groupby --help`.
 
+`crosstab` turns long measurements into a matrix. Row and column selectors each
+resolve to one field; repeated pairs aggregate globally in input order. The
+default cell is the record count, or use one `--aggregate FIELD:OPERATION` from
+the existing groupby engine. Axes are byte-sorted and absent cells are `N/A`
+unless `--filler` is specified. An absent measurement is not automatically zero.
+
+```bash
+rsomics-table crosstab --tsv --row sample --column feature measurements.tsv
+rsomics-table crosstab --tsv --row sample --column feature --aggregate value:sum measurements.tsv
+```
+
+Like datamash crosstab, the matrix has an empty top-left cell and category values
+as axis labels, which may themselves be empty. It is not a strict named-header
+table. To project it with another table operation, use `--no-header` and index
+selectors; `--no-output-header` omits the column-label row when requested.
+Quoted CSV labels, byte fields and gzip use the same table I/O as other commands.
+Compatibility is against datamash `--sort --header-in crosstab`, not its unsorted
+first-run-only behavior. Text aggregates retain original per-cell input order.
+
+```bash
+rsomics-table select --tsv --no-header --fields 1,3 matrix.tsv
+```
+
 Release compatibility is pinned to csvtk 0.37.0, GNU datamash 1.9, and
 BEDTools 2.31.1. Their operation-specific roles, revisions, licenses, and the
 historical team-owned source record are in
@@ -121,7 +146,9 @@ measurement protocol are in [benchmarks](benchmarks/README.md).
 The accepted 2026-08-20 measurements belong to implementation revision
 `2bd0fd3698c152bb27e7d0d7635d51fb41655112` and its measured executable, not
 the new delivery binaries. Numeric sorting trades higher memory for throughput;
-high-cardinality global grouping uses less memory but loses throughput. The
-delivery work changes packaging, notices and CI, not those six implementations
-or the locked dependencies. Original dependency terms and per-target enabled
-graphs are included in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+high-cardinality global grouping uses less memory but loses throughput.
+Version 0.2.0 adds crosstab without changing those six implementations or the external
+locked dependencies. Its separate [5M-row measurement](benchmarks/2026-11-03/crosstab.md)
+qualifies by memory reduction, not a universal throughput claim. Original
+dependency terms and per-target enabled graphs are included in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
